@@ -44,7 +44,7 @@ def sourceJson : Source → Json
   | .package => "package"
   | .part p => p.entryName
 
-def packageJson (p : Package) (title : String) : Json :=
+def packageJson (p : Package) (title : String) (sheets : Nat) : Json :=
   let parts := p.allParts.map fun n =>
     let ct := p.contentType n
     let via := if (p.overrides.lookup n).isSome then "Override" else
@@ -59,7 +59,8 @@ def packageJson (p : Package) (title : String) : Json :=
         ("written", r.target.renderRelative)]).toArray)]
   Json.mkObj [("title", title), ("parts", Json.arr parts.toArray), ("rels", Json.arr rels.toArray),
     ("defaults", Json.arr (p.defaults.map fun (e, t) => Json.mkObj [("ext", e), ("type", t)]).toArray),
-    ("check", toJson p.check)]
+    ("check", toJson p.check), ("conforms", toJson (conformsCheck p sheets)),
+    ("orphans", toJson p.orphanCheck)]
 
 def cellJson (sst : List String) (c : Cell) : Json :=
   let (kind, raw) := match c.stored with
@@ -117,7 +118,7 @@ def colTraceRpc (p : NatParam) : RequestM (RequestTask Json) :=
 @[server_rpc_method]
 def layoutRpc (p : NatParam) : RequestM (RequestTask Json) :=
   let n := max 1 (min p.n 40)
-  return .pure (packageJson (layout n) s!"layout {n}: a workbook with {n} sheet{if n == 1 then "" else "s"}")
+  return .pure (packageJson (layout n) s!"layout {n}: a workbook with {n} sheet{if n == 1 then "" else "s"}" n)
 
 /-! ## The widgets -/
 
@@ -143,7 +144,7 @@ Put the cursor on each line. -/
 
 /- The package of the example file: every entry, its content type, every relationship.
 The slider lays out a workbook with any number of sheets, asked of Lean live. -/
-#widget PackageMap with packageJson Example.workbook.toPackage "example.xlsx"
+#widget PackageMap with packageJson Example.workbook.toPackage "example.xlsx" Example.workbook.sheets.length
 
 /- The two sheets as a reader sees them, with the shared strings they point into. -/
 #widget SheetView with workbookJson Example.workbook

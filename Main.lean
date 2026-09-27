@@ -1,9 +1,29 @@
 import Xlsx
+import Lab.Adversarial
 
-open Xlsx
+open Lean Xlsx Lab
 
-/-- Write the example workbook as a real `.xlsx` file. -/
-def main (args : List String) : IO UInt32 := do
+/-- Write the adversarial corpus and its manifest: `xlsxgen lab <dir> [fuzz count]`. -/
+def lab (args : List String) : IO UInt32 := do
+  let dir : System.FilePath := args.headD "out/lab"
+  let n := (args.drop 1).head?.bind String.toNat? |>.getD 300
+  IO.FS.createDirAll dir
+  let cases := broken ++ probes ++ fuzz n
+  let mut entries : Array Json := #[]
+  for c in cases do
+    let files := (filesOf c.pkg c.wb).map fun (name, s) => ({ name, data := s.toUTF8 } : Zip.Entry)
+    IO.FS.writeBinFile (dir / s!"{c.name}.xlsx") (Zip.archive files)
+    entries := entries.push c.manifest
+  IO.FS.writeFile (dir / "manifest.json") (Json.arr entries).compress
+  IO.println s!"wrote {cases.length} files to {dir}"
+  let wrong := cases.filter fun c => c.accepted != c.expectAccept
+  for c in wrong do
+    IO.eprintln s!"{c.name}: spec says {if c.accepted then "accept" else "reject"}, expected otherwise"
+  IO.println s!"spec verdicts as expected on {cases.length - wrong.length}/{cases.length}"
+  return if wrong.isEmpty then 0 else 1
+
+/-- Write the example workbook as a real `.xlsx` file: `xlsxgen [path]`. -/
+def example_ (args : List String) : IO UInt32 := do
   let path := args.headD "out/example.xlsx"
   let wb := Example.workbook
   unless wb.check do
@@ -16,3 +36,8 @@ def main (args : List String) : IO UInt32 := do
   for (n, s) in wb.files do
     IO.println s!"  {n} ({s.utf8ByteSize} bytes)"
   return 0
+
+def main (args : List String) : IO UInt32 :=
+  match args with
+  | "lab" :: rest => lab rest
+  | rest => example_ rest

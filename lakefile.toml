@@ -8,3 +8,6 @@ name = "Xlsx"
 [[lean_exe]]
 name = "xlsxgen"
 root = "Main"
+
+[[lean_lib]]
+name = "Lab"

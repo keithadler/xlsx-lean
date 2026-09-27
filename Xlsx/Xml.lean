@@ -11,6 +11,9 @@ shared string parts are written from the `Workbook`.
 
 namespace Xlsx
 
+/-- Escape text for element content. A CR is written as a character reference: XML
+parsers turn a literal CR or CR LF into LF, so `a\r\nb` would come back as `a\nb`
+(the adversarial corpus caught this with openpyxl). -/
 def xmlEscape (s : String) : String :=
   s.foldl (fun acc c =>
     match c with
@@ -18,6 +21,15 @@ def xmlEscape (s : String) : String :=
     | '<' => acc ++ "&lt;"
     | '>' => acc ++ "&gt;"
     | '"' => acc ++ "&quot;"
+    | '\r' => acc ++ "&#13;"
+    | c => acc.push c) ""
+
+/-- Escape text for an attribute value, where XML also turns tab and LF into spaces. -/
+def attrEscape (s : String) : String :=
+  (xmlEscape s).foldl (fun acc c =>
+    match c with
+    | '\t' => acc ++ "&#9;"
+    | '\n' => acc ++ "&#10;"
     | c => acc.push c) ""
 
 def xmlHeader : String := "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n"
@@ -55,7 +67,7 @@ def relNs : String := "http://schemas.openxmlformats.org/officeDocument/2006/rel
 def Workbook.workbookXml (wb : Workbook) : String :=
   xmlHeader ++ s!"<workbook xmlns=\"{mainNs}\" xmlns:r=\"{relNs}\"><sheets>"
   ++ String.join ((sheetNums wb.sheets.length).zip wb.sheets |>.map fun (i, s) =>
-      s!"<sheet name=\"{xmlEscape s.name}\" sheetId=\"{numeral i}\" r:id=\"{rid i}\"/>")
+      s!"<sheet name=\"{attrEscape s.name}\" sheetId=\"{numeral i}\" r:id=\"{rid i}\"/>")
   ++ "</sheets></workbook>"
 
 def Cell.xml (c : Cell) : String :=
@@ -92,14 +104,24 @@ def stylesXml : String :=
   ++ "<cellStyles count=\"1\"><cellStyle name=\"Normal\" xfId=\"0\" builtinId=\"0\"/></cellStyles>"
   ++ "</styleSheet>"
 
-/-- Every entry of the archive, in the order a reader expects: content types first. -/
-def Workbook.files (wb : Workbook) : List (String × String) :=
-  let p := wb.toPackage
+/-- The content of a part, by what the package says it is. A part the workbook has no
+content for (possible in a hand-built package) gets an empty element. -/
+def partContent (wb : Workbook) (n : PartName) : String :=
+  if n = workbookPart then wb.workbookXml
+  else if n = stylesPart then stylesXml
+  else if n = sstPart then wb.sstXml
+  else match ((sheetNums wb.sheets.length).zip wb.sheets).find? (fun (i, _) => sheetPart i = n) with
+    | some (_, s) => s.xml
+    | none => xmlHeader ++ "<empty/>"
+
+/-- Every entry of an archive for package `p`, in the order a reader expects: content
+types first, then the relationships parts, then the parts. The entries are exactly
+`p.allParts` plus `[Content_Types].xml`. -/
+def filesOf (p : Package) (wb : Workbook) : List (String × String) :=
   [("[Content_Types].xml", p.contentTypesXml)]
   ++ p.rels.map (fun (s, rs) => (s.relsPart.entryName, relsXml rs))
-  ++ [(workbookPart.entryName, wb.workbookXml),
-      (stylesPart.entryName, stylesXml),
-      (sstPart.entryName, wb.sstXml)]
-  ++ ((sheetNums wb.sheets.length).zip wb.sheets).map (fun (i, s) => ((sheetPart i).entryName, s.xml))
+  ++ p.parts.map (fun n => (n.entryName, partContent wb n))
+
+def Workbook.files (wb : Workbook) : List (String × String) := filesOf wb.toPackage wb
 
 end Xlsx

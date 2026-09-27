@@ -97,6 +97,25 @@ def Workbook.toPackage (wb : Workbook) : Package := layout wb.sheets.length
 
 /-! ## It is a well-formed package, for every number of sheets -/
 
+theorem toLower_digitChar : ∀ d : Fin 10, (digitChar d).toLower = digitChar d := by decide
+
+theorem fold_sheet (i : Nat) :
+    PartName.fold ("sheet" ++ numeral i) = "sheet".toList ++ (encodeDec i).map digitChar := by
+  simp only [PartName.fold, numeral, String.toList_append, String.toList_ofList, List.map_append,
+    List.map_map]
+  have hs : "sheet".toList.map Char.toLower = "sheet".toList := by decide +kernel
+  rw [hs]
+  congr 1
+  exact List.map_congr_left (fun d _ => toLower_digitChar d)
+
+/-- Sheet part names stay distinct when compared without case. -/
+theorem sheetKey_injective (a b : Nat) (h : (sheetPart a).key = (sheetPart b).key) : a = b := by
+  simp only [PartName.key, sheetPart, Prod.mk.injEq] at h
+  have h1 := h.2.1
+  rw [fold_sheet, fold_sheet] at h1
+  have h2 := map_injective (fun _ _ => digitChar_injective) (List.append_cancel_left h1)
+  rw [← decodeDec_encodeDec a, ← decodeDec_encodeDec b, h2]
+
 theorem sheetPart_injective (a b : Nat) (h : sheetPart a = sheetPart b) : a = b := by
   simp only [sheetPart, PartName.mk.injEq, true_and, and_true] at h
   exact numeral_injective ((String.append_right_inj _).1 h)
@@ -145,21 +164,29 @@ theorem relsOf_workbook (n : Nat) : (layout n).relsOf (.part workbookPart) = wor
 
 theorem layout_wellFormed (n : Nat) : (layout n).WellFormed where
   names_unique := by
-    simp only [Package.allParts, Package.relsParts, layout, List.map_cons, List.map_nil,
-      Source.relsPart, workbookPart, stylesPart, sstPart]
-    refine List.nodup_append.2 ⟨?_, by simp, ?_⟩
-    · refine List.nodup_append.2 ⟨by simp, nodup_map sheetPart_injective (List.nodup_range' ..), ?_⟩
-      intro a ha b hb hab
-      subst hab
-      simp only [List.mem_map] at hb
-      obtain ⟨i, _, rfl⟩ := hb
-      simp [sheetPart] at ha
+    have e : (layout n).allParts.map PartName.key =
+        ([workbookPart.key, stylesPart.key, sstPart.key] ++ (sheetNums n).map (fun i => (sheetPart i).key))
+        ++ [Source.package.relsPart.key, (Source.part workbookPart).relsPart.key] := by
+      simp [Package.allParts, Package.relsParts, layout, List.map_map, Function.comp_def]
+    rw [e]
+    have hd : ∀ i, (sheetPart i).key.1 = [PartName.fold "xl", PartName.fold "worksheets"] := fun _ => rfl
+    refine List.nodup_append.2 ⟨List.nodup_append.2 ⟨by decide +kernel,
+      nodup_map sheetKey_injective (List.nodup_range' ..), ?_⟩, by decide +kernel, ?_⟩
     · intro a ha b hb hab
       subst hab
-      simp only [List.mem_append, List.mem_map] at ha
-      rcases ha with ha | ⟨i, _, rfl⟩
-      · simp at ha hb; rcases ha with rfl | rfl | rfl <;> simp at hb
-      · simp [sheetPart] at hb
+      simp only [List.mem_map] at hb
+      obtain ⟨i, _, hi⟩ := hb
+      have := congrArg Prod.fst hi
+      rw [hd] at this
+      simp only [List.mem_cons, List.not_mem_nil, or_false] at ha
+      rcases ha with rfl | rfl | rfl <;> revert this <;> decide +kernel
+    · intro a ha b hb hab
+      subst hab
+      simp only [List.mem_append, List.mem_map, List.mem_cons, List.not_mem_nil, or_false] at ha hb
+      rcases ha with (rfl | rfl | rfl) | ⟨i, _, rfl⟩
+      all_goals first
+        | (rcases hb with h | h <;> revert h <;> decide +kernel)
+        | (rcases hb with h | h <;> (have := congrArg Prod.fst h; rw [hd] at this; revert this; decide +kernel))
   typed := by
     intro x hx
     simp only [Package.allParts, Package.relsParts, layout, List.map_cons, List.map_nil,
@@ -205,45 +232,77 @@ theorem layout_wellFormed (n : Nat) : (layout n).WellFormed where
       exact nodup_map rid_injective (List.nodup_range' ..)
   one_main := by
     simp [Package.mainDocument, Package.relsOf, layout]
-  reachable := by
-    have hwb : (layout n).Reachable workbookPart :=
-      .root ⟨_, List.mem_cons_self .., _, List.mem_cons_self .., rfl⟩
-    have hstep : ∀ r ∈ workbookRels n, (layout n).Reachable (r.target.under ["xl"]) :=
-      fun r hr => .step hwb ⟨_, List.mem_cons_of_mem _ (List.mem_cons_self ..), r, hr, rfl⟩
-    intro x hx
-    simp only [layout, List.mem_append, List.mem_cons, List.mem_map, List.not_mem_nil,
-      or_false] at hx
-    rcases hx with (rfl | rfl | rfl) | ⟨i, hi, rfl⟩
-    · exact hwb
-    · exact hstep ⟨rid (n + 1), .styles, ⟨[], "styles", ["xml"]⟩⟩ (by simp [workbookRels])
-    · exact hstep ⟨rid (n + 2), .sharedStrings, ⟨[], "sharedStrings", ["xml"]⟩⟩
-        (by simp [workbookRels])
-    · exact hstep ⟨rid i, .worksheet, ⟨["worksheets"], "sheet" ++ numeral i, ["xml"]⟩⟩
-        (by simp only [workbookRels, List.mem_append, List.mem_map]; exact Or.inl ⟨i, hi, rfl⟩)
 
 /-- **Every workbook lays out as a well-formed package**, whatever its number of sheets. -/
 theorem Workbook.toPackage_wellFormed (wb : Workbook) : wb.toPackage.WellFormed :=
   layout_wellFormed _
 
+/-- And it has no orphans: every part is found from the package. -/
+theorem layout_noOrphans (n : Nat) : (layout n).NoOrphans := by
+  have hwb : (layout n).Reachable workbookPart :=
+    .root ⟨_, List.mem_cons_self .., _, List.mem_cons_self .., rfl⟩
+  have hstep : ∀ r ∈ workbookRels n, (layout n).Reachable (r.target.under ["xl"]) :=
+    fun r hr => .step hwb ⟨_, List.mem_cons_of_mem _ (List.mem_cons_self ..), r, hr, rfl⟩
+  intro x hx
+  simp only [layout, List.mem_append, List.mem_cons, List.mem_map, List.not_mem_nil,
+    or_false] at hx
+  rcases hx with (rfl | rfl | rfl) | ⟨i, hi, rfl⟩
+  · exact hwb
+  · exact hstep ⟨rid (n + 1), .styles, ⟨[], "styles", ["xml"]⟩⟩ (by simp [workbookRels])
+  · exact hstep ⟨rid (n + 2), .sharedStrings, ⟨[], "sharedStrings", ["xml"]⟩⟩
+      (by simp [workbookRels])
+  · exact hstep ⟨rid i, .worksheet, ⟨["worksheets"], "sheet" ++ numeral i, ["xml"]⟩⟩
+      (by simp only [workbookRels, List.mem_append, List.mem_map]; exact Or.inl ⟨i, hi, rfl⟩)
+
+theorem Workbook.toPackage_noOrphans (wb : Workbook) : wb.toPackage.NoOrphans :=
+  layout_noOrphans _
+
 /-! ## And it follows the SpreadsheetML rules on top -/
 
-/-- What a spreadsheet reader expects of the package, beyond the packaging rules. -/
+theorem mainDocument_layout (n : Nat) : (layout n).mainDocument = [workbookPart] := by
+  simp [Package.mainDocument, Package.relsOf, layout]
+  rfl
+
+/-- What a spreadsheet reader expects of the package, beyond the packaging rules. It
+follows the main document wherever it is, as a reader does; it does not assume
+`/xl/workbook.xml`. -/
 structure SpreadsheetConforms (p : Package) (sheets : Nat) : Prop where
   /-- The main document is typed as a workbook. -/
   main_is_workbook : ∀ m ∈ p.mainDocument, p.contentType m = some workbookType
   /-- One worksheet relationship per sheet. -/
-  one_rel_per_sheet :
-    ((p.relsOf (.part workbookPart)).filter (·.type == .worksheet)).length = sheets
+  one_rel_per_sheet : ∀ m ∈ p.mainDocument,
+    ((p.relsOf (.part m)).filter (·.type == .worksheet)).length = sheets
   /-- Each lands on a part typed as a worksheet. -/
-  sheets_typed : ∀ r ∈ p.relsOf (.part workbookPart), r.type = .worksheet →
-    p.contentType (r.target.under ["xl"]) = some worksheetType
+  sheets_typed : ∀ m ∈ p.mainDocument, ∀ r ∈ p.relsOf (.part m), r.type = .worksheet →
+    p.contentType (r.target.under m.dir) = some worksheetType
+
+/-- The SpreadsheetML rules, as a check that runs. -/
+def conformsCheck (p : Package) (sheets : Nat) : Bool :=
+  p.mainDocument.all fun m =>
+    p.contentType m == some workbookType
+    && ((p.relsOf (.part m)).filter (·.type == .worksheet)).length == sheets
+    && (p.relsOf (.part m)).all fun r =>
+        r.type != .worksheet || p.contentType (r.target.under m.dir) == some worksheetType
+
+theorem conformsCheck_sound {p : Package} {n : Nat} (h : conformsCheck p n = true) :
+    SpreadsheetConforms p n := by
+  simp only [conformsCheck, List.all_eq_true, Bool.and_eq_true, beq_iff_eq, Bool.or_eq_true,
+    bne_iff_ne, ne_eq] at h
+  refine ⟨fun m hm => (h m hm).1.1, fun m hm => (h m hm).1.2, ?_⟩
+  intro m hm r hr ht
+  rcases (h m hm).2 r hr with h' | h'
+  · exact absurd ht h'
+  · exact h'
 
 theorem layout_conforms (n : Nat) : SpreadsheetConforms (layout n) n where
   main_is_workbook := by
     intro m hm
-    simp [Package.mainDocument, Package.relsOf, layout] at hm
-    subst hm; rfl
+    rw [mainDocument_layout] at hm
+    simp at hm; subst hm; rfl
   one_rel_per_sheet := by
+    intro m hm
+    rw [mainDocument_layout] at hm
+    simp at hm; subst hm
     rw [relsOf_workbook, workbookRels, List.filter_append]
     simp only [List.filter_map, Function.comp_def, sheetNums]
     have hw : (RelType.worksheet == RelType.worksheet) = true := rfl
@@ -253,7 +312,9 @@ theorem layout_conforms (n : Nat) : SpreadsheetConforms (layout n) n where
       List.length_map, Bool.false_eq_true, ite_false, List.length_nil, Nat.add_zero]
     rw [List.filter_eq_self.2 (fun _ _ => rfl), List.length_range']
   sheets_typed := by
-    intro r hr ht
+    intro m hm r hr ht
+    rw [mainDocument_layout] at hm
+    simp at hm; subst hm
     rw [relsOf_workbook] at hr
     simp only [workbookRels, List.mem_append, List.mem_map, List.mem_cons] at hr
     rcases hr with ⟨i, hi, rfl⟩ | rfl | rfl | hr

@@ -68,6 +68,32 @@ structure Workbook where
 
 /-! ## The rules -/
 
+/-! Where each rule comes from is said beside it: **XML** (the file must parse),
+**ECMA-376** (the standard), or **Excel** (Microsoft's published limits, which a file
+meant to open in Excel has to respect even where the standard is silent). -/
+
+/-- A character XML 1.0 can carry (the `Char` production). U+0000 to U+001F other than
+tab, LF and CR cannot appear in an XML document at all, escaped or not, and neither can
+U+FFFE or U+FFFF. -/
+def xmlChar (c : Char) : Bool :=
+  let n := c.toNat
+  n == 0x9 || n == 0xA || n == 0xD || (0x20 ≤ n && n ≤ 0xD7FF)
+    || (0xE000 ≤ n && n ≤ 0xFFFD) || (0x10000 ≤ n && n ≤ 0x10FFFF)
+
+/-- Length in UTF-16 code units, which is how Excel counts characters. -/
+def utf16Length (s : String) : Nat :=
+  s.toList.foldl (fun a c => a + if c.toNat ≥ 0x10000 then 2 else 1) 0
+
+/-- Excel's limit on the text in one cell. -/
+def maxText : Nat := 32767
+
+/-- Text a cell may hold: **XML** characters only, at most 32767 of them (**Excel**). -/
+def textOk (s : String) : Bool := s.toList.all xmlChar && utf16Length s ≤ maxText
+
+/-- Excel keeps 15 significant digits, so a larger integer does not survive a round trip;
+readers that use doubles already lose it past 2^53 (**Excel**). -/
+def maxNumber : Nat := 10 ^ 15
+
 /-- Characters Excel refuses in a sheet name. -/
 def forbiddenInSheetName : List Char := ['[', ']', ':', '*', '?', '/', '\\']
 
@@ -81,6 +107,10 @@ structure Cell.WellFormed (wb : Workbook) (row : Row) (c : Cell) : Prop where
   col_le : c.ref.col ≤ maxCol
   shared_ok : ∀ i, c.stored = .shared i → i < wb.sst.length
   style_ok : c.style < wb.styleCount
+  /-- A number keeps all its digits (**Excel**). -/
+  number_ok : ∀ n, c.stored = .number n → n.natAbs < maxNumber
+  /-- Inline text is writable (**XML**, **Excel**). -/
+  inline_ok : ∀ t, c.stored = .inline t → textOk t = true
 
 structure Row.WellFormed (wb : Workbook) (row : Row) : Prop where
   index_pos : 0 < row.index
@@ -91,8 +121,13 @@ structure Row.WellFormed (wb : Workbook) (row : Row) : Prop where
 
 structure Sheet.WellFormed (wb : Workbook) (s : Sheet) : Prop where
   name_nonempty : s.name.toList ≠ []
-  name_short : s.name.length ≤ 31
-  name_chars : ∀ ch ∈ s.name.toList, ch ∉ forbiddenInSheetName
+  /-- At most 31 UTF-16 units (**Excel**). -/
+  name_short : utf16Length s.name ≤ 31
+  name_chars : ∀ ch ∈ s.name.toList, ch ∉ forbiddenInSheetName ∧ xmlChar ch = true
+  /-- No apostrophe first or last: formulas quote sheet names with it (**Excel**). -/
+  name_quotes : s.name.toList.head? ≠ some '\'' ∧ s.name.toList.getLast? ≠ some '\''
+  /-- `History` is reserved (**Excel**). -/
+  name_reserved : s.key ≠ "history".toList
   rows : ∀ r ∈ s.rows, r.WellFormed wb
   /-- Rows are written top to bottom, each row once. -/
   sorted : (s.rows.map (·.index)).Pairwise (· < ·)
@@ -102,6 +137,8 @@ structure Workbook.WellFormed (wb : Workbook) : Prop where
   sheets : ∀ s ∈ wb.sheets, s.WellFormed wb
   names_unique : (wb.sheets.map Sheet.key).Nodup
   has_style : 0 < wb.styleCount
+  /-- Every shared string is writable (**XML**, **Excel**). -/
+  sst_ok : ∀ t ∈ wb.sst, textOk t = true
 
 /-! ## What the rules buy -/
 
@@ -181,7 +218,11 @@ theorem increasing_sound : ∀ {l : List Nat}, increasing l = true → l.Pairwis
 
 def Cell.check (wb : Workbook) (row : Row) (c : Cell) : Bool :=
   c.ref.row == row.index && 0 < c.ref.col && c.ref.col ≤ maxCol
-  && (match c.stored with | .shared i => i < wb.sst.length | _ => true)
+  && (match c.stored with
+      | .shared i => i < wb.sst.length
+      | .number n => n.natAbs < maxNumber
+      | .inline t => textOk t
+      | .bool _ => true)
   && c.style < wb.styleCount
 
 def Row.check (wb : Workbook) (row : Row) : Bool :=
@@ -189,21 +230,30 @@ def Row.check (wb : Workbook) (row : Row) : Bool :=
   && increasing (row.cells.map (·.ref.col))
 
 def Sheet.check (wb : Workbook) (s : Sheet) : Bool :=
-  !s.name.toList.isEmpty && s.name.length ≤ 31
-  && s.name.toList.all (fun ch => !forbiddenInSheetName.contains ch)
+  !s.name.toList.isEmpty && utf16Length s.name ≤ 31
+  && s.name.toList.all (fun ch => !forbiddenInSheetName.contains ch && xmlChar ch)
+  && s.name.toList.head? != some '\'' && s.name.toList.getLast? != some '\''
+  && s.key != "history".toList
   && s.rows.all (Row.check wb) && increasing (s.rows.map (·.index))
 
 def Workbook.check (wb : Workbook) : Bool :=
   !wb.sheets.isEmpty && wb.sheets.all (Sheet.check wb)
   && Package.noDups (wb.sheets.map Sheet.key) && 0 < wb.styleCount
+  && wb.sst.all textOk
 
 theorem Cell.check_sound {wb row c} (h : Cell.check wb row c = true) : c.WellFormed wb row := by
   simp only [Cell.check, Bool.and_eq_true, beq_iff_eq, decide_eq_true_eq] at h
   obtain ⟨⟨⟨⟨h1, h2⟩, h3⟩, h4⟩, h5⟩ := h
-  refine ⟨h1, h2, h3, ?_, h5⟩
-  intro i hi
-  rw [hi] at h4
-  simpa using h4
+  refine ⟨h1, h2, h3, ?_, h5, ?_, ?_⟩
+  · intro i hi
+    rw [hi] at h4
+    simpa using h4
+  · intro n hn
+    rw [hn] at h4
+    simpa using h4
+  · intro t ht
+    rw [ht] at h4
+    simpa using h4
 
 theorem Row.check_sound {wb row} (h : Row.check wb row = true) : row.WellFormed wb := by
   simp only [Row.check, Bool.and_eq_true, decide_eq_true_eq, List.all_eq_true] at h
@@ -212,19 +262,20 @@ theorem Row.check_sound {wb row} (h : Row.check wb row = true) : row.WellFormed 
 
 theorem Sheet.check_sound {wb s} (h : Sheet.check wb s = true) : s.WellFormed wb := by
   simp only [Sheet.check, Bool.and_eq_true, decide_eq_true_eq, List.all_eq_true,
-    List.isEmpty_eq_false_iff, Bool.not_eq_eq_eq_not, Bool.not_true] at h
-  obtain ⟨⟨⟨⟨h1, h2⟩, h3⟩, h4⟩, h5⟩ := h
-  refine ⟨h1, h2, ?_, fun r hr => Row.check_sound (h4 r hr), increasing_sound h5⟩
-  intro ch hch hbad
-  have := h3 ch hch
-  rw [List.contains_iff_mem.2 hbad] at this
-  cases this
+    List.isEmpty_eq_false_iff, Bool.not_eq_eq_eq_not, Bool.not_true, bne_iff_ne, ne_eq] at h
+  obtain ⟨⟨⟨⟨⟨⟨⟨h1, h2⟩, h3⟩, hq1⟩, hq2⟩, hh⟩, h4⟩, h5⟩ := h
+  refine ⟨h1, h2, ?_, ⟨hq1, hq2⟩, hh, fun r hr => Row.check_sound (h4 r hr), increasing_sound h5⟩
+  intro ch hch
+  obtain ⟨hf, hx⟩ := h3 ch hch
+  refine ⟨fun hbad => ?_, hx⟩
+  rw [List.contains_iff_mem.2 hbad] at hf
+  cases hf
 
 /-- **The checker is sound**: a workbook it accepts follows every rule. -/
 theorem Workbook.check_sound {wb : Workbook} (h : wb.check = true) : wb.WellFormed := by
   simp only [Workbook.check, Bool.and_eq_true, decide_eq_true_eq, List.all_eq_true,
     Bool.not_eq_true', List.isEmpty_eq_false_iff] at h
-  obtain ⟨⟨⟨h1, h2⟩, h3⟩, h4⟩ := h
-  exact ⟨h1, fun s hs => Sheet.check_sound (h2 s hs), Package.noDups_sound h3, h4⟩
+  obtain ⟨⟨⟨⟨h1, h2⟩, h3⟩, h4⟩, h5⟩ := h
+  exact ⟨h1, fun s hs => Sheet.check_sound (h2 s hs), Package.noDups_sound h3, h4, h5⟩
 
 end Xlsx

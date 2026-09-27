@@ -44,6 +44,14 @@ def ext (p : PartName) : String := p.exts.getLast?.getD ""
 def render (p : PartName) : String :=
   "/" ++ String.join (p.dir.map (· ++ "/")) ++ p.stem ++ String.join (p.exts.map ("." ++ ·))
 
+/-- ASCII case folding. OPC compares part names without regard to ASCII case
+(ECMA-376 Part 2, §6.2.2.3), so `/xl/Workbook.xml` and `/xl/workbook.xml` are one name. -/
+def fold (s : String) : List Char := s.toList.map Char.toLower
+
+/-- What two part names are compared by. -/
+def key (p : PartName) : List (List Char) × List Char × List (List Char) :=
+  (p.dir.map fold, fold p.stem, p.exts.map fold)
+
 /-- A relative target resolved against the folder of a source part. -/
 def under (dir : List String) (t : PartName) : PartName := { t with dir := dir ++ t.dir }
 
@@ -145,8 +153,8 @@ def mainDocument (p : Package) : List PartName :=
 
 /-- The rules a package must follow for a reader to open it. -/
 structure WellFormed (p : Package) : Prop where
-  /-- No two entries of the archive have the same name. -/
-  names_unique : p.allParts.Nodup
+  /-- No two entries of the archive have the same name, ignoring ASCII case. -/
+  names_unique : (p.allParts.map PartName.key).Nodup
   /-- Every part, relationships parts included, has a content type. -/
   typed : ∀ n ∈ p.allParts, (p.contentType n).isSome
   /-- Relationships come from the package or from a part that exists. -/
@@ -157,8 +165,13 @@ structure WellFormed (p : Package) : Prop where
   ids_unique : ∀ s rs, (s, rs) ∈ p.rels → (rs.map (·.id)).Nodup
   /-- The package names exactly one main document. -/
   one_main : p.mainDocument.length = 1
-  /-- Every part can be found from the package. -/
-  reachable : ∀ n ∈ p.parts, p.Reachable n
+
+/-- A rule for *writers*, not a condition for reading: every part can be found from the
+package. The standard tells readers to ignore parts they cannot place (ECMA-376 Part 1,
+§9.1.4), so an orphan does not make a package unreadable; it is only untidy. It was a
+`WellFormed` rule until the adversarial corpus showed that to be stricter than the
+standard. -/
+def NoOrphans (p : Package) : Prop := ∀ n ∈ p.parts, p.Reachable n
 
 /-! ## The checker -/
 
@@ -202,15 +215,18 @@ def found (p : Package) : Nat → List PartName
 
 /-- The checker. -/
 def check (p : Package) : Bool :=
-  noDups p.allParts
+  noDups (p.allParts.map PartName.key)
   && p.allParts.all (fun n => (p.contentType n).isSome)
   && p.rels.all (fun (s, rs) =>
        (match s with | .package => true | .part n => p.parts.contains n)
        && rs.all (fun r => p.parts.contains (r.target.under s.dir))
        && noDups (rs.map (·.id)))
   && p.mainDocument.length == 1
-  && (let f := p.found p.parts.length
-      p.parts.all (fun n => f.contains n))
+
+/-- The orphan check: every part is found within `parts.length` rounds. -/
+def orphanCheck (p : Package) : Bool :=
+  let f := p.found p.parts.length
+  p.parts.all (fun n => f.contains n)
 
 theorem mem_targetsFrom {p : Package} {srcs : List Source} {b : PartName}
     (h : b ∈ p.targetsFrom srcs) : ∃ a ∈ srcs, p.Edge a b := by
@@ -241,8 +257,8 @@ theorem found_reachable {p : Package} : ∀ k, ∀ b ∈ p.found k, p.Reachable 
 /-- **The checker is sound**: a package it accepts follows every rule. -/
 theorem check_sound {p : Package} (h : p.check = true) : p.WellFormed := by
   simp only [check, Bool.and_eq_true, List.all_eq_true, beq_iff_eq, List.contains_iff_mem] at h
-  obtain ⟨⟨⟨⟨hnd, hty⟩, hrels⟩, hmain⟩, hreach⟩ := h
-  refine ⟨noDups_sound hnd, hty, ?_, ?_, ?_, hmain, ?_⟩
+  obtain ⟨⟨⟨hnd, hty⟩, hrels⟩, hmain⟩ := h
+  refine ⟨noDups_sound hnd, hty, ?_, ?_, ?_, hmain⟩
   · intro s rs hmem n hs
     have := (hrels (s, rs) hmem).1.1
     subst hs
@@ -251,8 +267,11 @@ theorem check_sound {p : Package} (h : p.check = true) : p.WellFormed := by
     simpa using (hrels (s, rs) hmem).1.2 r hr
   · intro s rs hmem
     exact noDups_sound (hrels (s, rs) hmem).2
-  · intro n hn
-    exact found_reachable _ n (by simpa using hreach n hn)
+
+theorem orphanCheck_sound {p : Package} (h : p.orphanCheck = true) : p.NoOrphans := by
+  simp only [orphanCheck, List.all_eq_true, List.contains_iff_mem] at h
+  intro n hn
+  exact found_reachable _ n (h n hn)
 
 /-! ## What a well-formed package guarantees a reader -/
 

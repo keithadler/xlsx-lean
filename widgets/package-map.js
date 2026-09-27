@@ -149,13 +149,12 @@ function TypesTable({ pkg, hover, setHover }) {
 }
 
 const RULES = [
-  ['names_unique', 'no two entries share a name'],
+  ['names_unique', 'no two entries share a name, ignoring case'],
   ['typed', 'every entry has a content type'],
   ['sources_exist', 'relationships come from real parts'],
   ['targets_exist', 'every relationship lands on a part'],
   ['ids_unique', 'relationship ids unique per .rels'],
   ['one_main', 'exactly one main document'],
-  ['reachable', 'every part reachable from the package'],
 ];
 
 export default function PackageMap(props) {
@@ -194,6 +193,12 @@ export default function PackageMap(props) {
         ...RULES.map(([k, t]) => h('div', { key: k, style: { display: 'flex', gap: 8, fontSize: 11.5, padding: '2px 0' } },
           h('span', { style: { color: pkg.check ? '#16a34a' : '#dc2626', fontWeight: 700 } }, pkg.check ? '✓' : '?'),
           h('span', { style: { fontFamily: mono, minWidth: 104 } }, k), h('span', { style: muted }, t))),
+        h('div', { style: { display: 'flex', gap: 8, fontSize: 11.5, padding: '6px 0 2px', borderTop: '1px solid rgba(127,127,127,0.2)', marginTop: 6 } },
+          h('span', { style: { color: pkg.conforms ? '#16a34a' : '#dc2626', fontWeight: 700 } }, pkg.conforms ? '✓' : '✗'),
+          h('span', { style: { fontFamily: mono, minWidth: 104 } }, 'conformsCheck'), h('span', { style: muted }, 'main document is a workbook; one typed worksheet per sheet')),
+        h('div', { style: { display: 'flex', gap: 8, fontSize: 11.5, padding: '2px 0' } },
+          h('span', { style: { color: pkg.orphans ? '#16a34a' : '#d97706', fontWeight: 700 } }, pkg.orphans ? '✓' : '!'),
+          h('span', { style: { fontFamily: mono, minWidth: 104 } }, 'NoOrphans'), h('span', { style: muted }, 'writer rule: every part reachable (readers ignore orphans, §9.1.4)')),
         h('div', { style: { fontSize: 11, marginTop: 8, lineHeight: 1.45, ...muted } },
           'Package.check_sound turns this run into a proof of WellFormed. ',
           'Workbook.toPackage_wellFormed proves it for every number of sheets at once, with no run at all.'))));
