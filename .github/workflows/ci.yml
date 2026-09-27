@@ -1,0 +1,35 @@
+name: CI
+on:
+  push:
+  pull_request:
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: leanprover/lean-action@v1
+        with:
+          build: true
+          test: false
+          lint: false
+      - name: The example file
+        run: lake exe xlsxgen out/example.xlsx
+      - name: The adversarial corpus (fails if any spec verdict is not the expected one)
+        run: lake exe xlsxgen lab out/lab 300
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Four readers on the corpus
+        run: |
+          pip install openpyxl==3.1.5 python-calamine==0.4.0
+          mkdir -p /tmp/sheetjs && npm install --prefix /tmp/sheetjs xlsx@0.18.5
+          python tools/differential.py out/lab --sheetjs /tmp/sheetjs/node_modules --json out/lab/results.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: xlsx
+          path: |
+            out/example.xlsx
+            out/lab/results.json

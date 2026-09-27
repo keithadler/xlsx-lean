@@ -23,7 +23,7 @@ function Bands({ n, maxCol }) {
     ...BANDS.map((b, i) => h('g', { key: b.len },
       h('rect', { x: x(b.lo), y: 14, width: x(b.hi) - x(b.lo), height: 20, fill: colors[i], fillOpacity: 0.35, stroke: colors[i] }),
       h('text', { x: (x(b.lo) + x(b.hi)) / 2, y: 28, fontSize: 10.5, textAnchor: 'middle', fill: fg }, `${b.len} letter${b.len > 1 ? 's' : ''}`),
-      h('text', { x: x(b.hi), y: 48, fontSize: 9.5, textAnchor: 'middle', fill: fg, style: muted, fontFamily: mono }, b.hi))),
+      h('text', { x: x(b.hi), y: 48, fontSize: 9.5, textAnchor: i === BANDS.length - 1 ? 'end' : 'middle', fill: fg, style: muted, fontFamily: mono }, b.hi))),
     h('line', { x1: x(maxCol), x2: x(maxCol), y1: 6, y2: 40, stroke: RED, strokeWidth: 2 }),
     h('text', { x: x(maxCol), y: 64, fontSize: 10, textAnchor: 'middle', fill: RED, fontWeight: 600 }, 'XFD, the last column'),
     n >= 1 && n <= 475254 ? h('g', null,

@@ -105,7 +105,7 @@ function Graph({ pkg, hover, setHover }) {
       const on = hover && (hover === e.from || hover === e.to || hover === e.rels);
       return h('g', { key: 'e' + i, style: { opacity: hover && !on ? 0.15 : 1, transition: 'opacity 120ms' } },
         h('path', { d: `M ${x1} ${y1} C ${mx} ${y1}, ${mx} ${y2}, ${x2} ${y2}`, fill: 'none', stroke: c, strokeWidth: on ? 2.4 : 1.4, markerEnd: `url(#arrow-${e.rel.type})` }),
-        h('text', { x: x2 - 8, y: y2 - 6, fontSize: 10, textAnchor: 'end', fill: c, fontFamily: mono, fontWeight: 600 }, e.rel.id));
+        h('text', { x: x2 - 10, y: y2 - 6, fontSize: 10, textAnchor: 'end', fill: c, fontFamily: mono, fontWeight: 600 }, e.rel.id));
     }),
     ...cols.flatMap((col, ci) => col.flatMap(p => {
       const { x, y } = pos[p.entry];

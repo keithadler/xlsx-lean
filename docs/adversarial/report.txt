@@ -1,0 +1,70 @@
+
+== broken ==
+case                         ours   expat     openpyxl  calamine  sheetjs  
+W01-sst-dangling             FAIL   ok        REJECTS   CRASHES   REJECTS  
+                                    calamine: PanicException: index out of bounds: the len is 14 but the index is 99
+W02-cells-unsorted           FAIL   ok        ok        ok        ok       
+W03-row-twice                FAIL   ok        ok        ok        ok       
+W04-cell-wrong-row           FAIL   ok        ok        ok        ok       
+W05-column-XFE               FAIL   ok        ok        ok        ok       
+W06-row-1048577              FAIL   ok        REJECTS   ok        ok       
+W07-name-32                  FAIL   ok        ok        ok        ok       
+W08-name-slash               FAIL   ok        REJECTS   ok        ok       
+W09-name-case-clash          FAIL   ok        DIFFERS   ok        ok       
+                                    openpyxl: sheet names ['Limits', 'LIMITS1']... != ['Limits', 'LIMITS']...
+W10-name-empty               FAIL   ok        DIFFERS   ok        ok       
+                                    openpyxl: sheet names ['Sheet', 'Columns']... != ['', 'Columns']...
+W11-style-dangling           FAIL   ok        REJECTS   ok        ok       
+W12-no-sheets                FAIL   ok        ok        ok        ok       
+P01-rel-dangling             FAIL   ok        DIFFERS   REJECTS   REJECTS  
+                                    openpyxl: sheet names ['Columns']... != ['Limits', 'Columns']...
+P02-workbook-untyped         FAIL   ok        REJECTS   ok        ok       
+P03-rid-twice                FAIL   ok        REJECTS   REJECTS   ok       
+P04-two-main                 FAIL   ok        ok        ok        ok       
+P06-entry-twice              FAIL   ok        ok        ok        ok       
+P07-no-content-type          FAIL   ok        ok        ok        ok       
+W13-same-cell-twice          FAIL   ok        DIFFERS   DIFFERS   DIFFERS  
+                                    openpyxl: Limits!A1: read 2, model '1'
+                                    calamine: Limits!A1: read 2.0, model '1'
+                                    sheetjs: Limits!A1: read 2, model '1'
+P09-names-differ-by-case     FAIL   ok        ok        ok        ok       
+P08-sheet-typed-styles       FAIL   ok        ok        ok        ok       
+
+== gap ==
+case                         ours   expat     openpyxl  calamine  sheetjs  
+G01-control-char-shared      FAIL   REJECTS   REJECTS   ok        ok       
+G02-control-char-inline      FAIL   REJECTS   REJECTS   ok        ok       
+G03-nonchar-FFFE             FAIL   REJECTS   REJECTS   ok        ok       
+G09-long-string              FAIL   ok        ok        ok        ok       
+G10-name-apostrophe          FAIL   ok        ok        ok        ok       
+G11-name-History             FAIL   ok        ok        ok        ok       
+G12-name-emoji-31            FAIL   ok        ok        ok        ok       
+G13-int-2^53+1               FAIL   ok        ok        DIFFERS   DIFFERS  
+                                    calamine: Probe!A1: read 9007199254740992.0, model '9007199254740993'
+                                    sheetjs: Probe!A1: read 9007199254740992, model '9007199254740993'
+G14-int-10^400               FAIL   ok        ok        DIFFERS   DIFFERS  
+                                    calamine: Probe!A1: read inf, model '10000000000000000000000000000000000000000000000000000000000
+                                    sheetjs: Probe!A1: read None, model '10000000000000000000000000000000000000000000000000000000000
+
+== probe ==
+case                         ours   expat     openpyxl  calamine  sheetjs  
+P05-orphan-part              pass   ok        ok        ok        ok       
+G04-spaces-inline            pass   ok        ok        ok        ok       
+G05-spaces-shared            pass   ok        ok        ok        ok       
+G06-crlf-shared              pass   ok        ok        ok        ok       
+G07-cr-inline                pass   ok        ok        ok        ok       
+G08-tab-newline              pass   ok        ok        ok        ok       
+G15-astral                   pass   ok        ok        ok        ok       
+G16-markup                   pass   ok        ok        ok        ok       
+G17-empty-sheet              pass   ok        ok        ok        ok       
+G18-many-sheets              pass   ok        ok        ok        ok       
+G19-formula-looking          pass   ok        ok        ok        ok       
+G20-empty-string             pass   ok        ok        DIFFERS   ok       
+                                    calamine: Probe!A1: read None, model ''
+
+== fuzz: 300 random well-formed workbooks ==
+expat     agrees on 300/300
+openpyxl  agrees on 300/300
+calamine  agrees on 130/300; first: F1 {'status': 'differs', 'diffs': ["Fuzz 1-1!Z1: read None, model ''"], 'count': 1}
+           339 x read None, model ''
+sheetjs   agrees on 300/300

@@ -1,0 +1,7472 @@
+[
+ {
+  "name": "W01-sst-dangling",
+  "kind": "broken",
+  "what": "a cell points at shared string 99 of 14",
+  "ours": false,
+  "failed": [
+   "workbook_check"
+  ],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "rejects",
+   "error": "IndexError: list index out of range"
+  },
+  "calamine": {
+   "status": "crashes",
+   "error": "PanicException: index out of bounds: the len is 14 but the index is 99"
+  },
+  "sheetjs": {
+   "status": "rejects",
+   "error": "ValueError: Cannot convert undefined or null to object"
+  }
+ },
+ {
+  "name": "W02-cells-unsorted",
+  "kind": "broken",
+  "what": "B1 written before A1",
+  "ours": false,
+  "failed": [
+   "workbook_check"
+  ],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "W03-row-twice",
+  "kind": "broken",
+  "what": "row 1 written twice",
+  "ours": false,
+  "failed": [
+   "workbook_check"
+  ],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "W04-cell-wrong-row",
+  "kind": "broken",
+  "what": "cell A7 inside row 2",
+  "ours": false,
+  "failed": [
+   "workbook_check"
+  ],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "W05-column-XFE",
+  "kind": "broken",
+  "what": "column 16385 (XFE), one past the last",
+  "ours": false,
+  "failed": [
+   "workbook_check"
+  ],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "W06-row-1048577",
+  "kind": "broken",
+  "what": "row 1048577, one past the last",
+  "ours": false,
+  "failed": [
+   "workbook_check"
+  ],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "rejects",
+   "error": "ValueError: Row numbers must be between 1 and 1048576. Row number supplied was 1048577"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "W07-name-32",
+  "kind": "broken",
+  "what": "sheet name of 32 characters",
+  "ours": false,
+  "failed": [
+   "workbook_check"
+  ],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "W08-name-slash",
+  "kind": "broken",
+  "what": "sheet name containing /",
+  "ours": false,
+  "failed": [
+   "workbook_check"
+  ],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "rejects",
+   "error": "ValueError: Unable to read workbook: could not read worksheets from out/lab/W08-name-slash.xlsx.\nThis is most probably because the workbook source files contain some invalid XML.\nPlease see the except"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "W09-name-case-clash",
+  "kind": "broken",
+  "what": "sheets 'Limits' and 'LIMITS'",
+  "ours": false,
+  "failed": [
+   "workbook_check"
+  ],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "differs",
+   "diffs": [
+    "sheet names ['Limits', 'LIMITS1']... != ['Limits', 'LIMITS']..."
+   ],
+   "count": 1
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "W10-name-empty",
+  "kind": "broken",
+  "what": "empty sheet name",
+  "ours": false,
+  "failed": [
+   "workbook_check"
+  ],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "differs",
+   "diffs": [
+    "sheet names ['Sheet', 'Columns']... != ['', 'Columns']..."
+   ],
+   "count": 1
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "W11-style-dangling",
+  "kind": "broken",
+  "what": "style 5 of 2",
+  "ours": false,
+  "failed": [
+   "workbook_check"
+  ],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "rejects",
+   "error": "IndexError: list index out of range"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "W12-no-sheets",
+  "kind": "broken",
+  "what": "a workbook with no sheets",
+  "ours": false,
+  "failed": [
+   "workbook_check"
+  ],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "P01-rel-dangling",
+  "kind": "broken",
+  "what": "worksheet relationship to sheet9.xml, which is not there",
+  "ours": false,
+  "failed": [
+   "package_check",
+   "conforms_check"
+  ],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "differs",
+   "diffs": [
+    "sheet names ['Columns']... != ['Limits', 'Columns']..."
+   ],
+   "count": 1
+  },
+  "calamine": {
+   "status": "rejects",
+   "error": "WorksheetNotFound: Limits"
+  },
+  "sheetjs": {
+   "status": "rejects",
+   "error": "ValueError: Cannot convert undefined or null to object"
+  }
+ },
+ {
+  "name": "P02-workbook-untyped",
+  "kind": "broken",
+  "what": "no Override for the workbook: it falls to Default application/xml",
+  "ours": false,
+  "failed": [
+   "conforms_check"
+  ],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "rejects",
+   "error": "OSError: File contains no valid workbook part"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "P03-rid-twice",
+  "kind": "broken",
+  "what": "two relationships with id rId1",
+  "ours": false,
+  "failed": [
+   "package_check"
+  ],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "rejects",
+   "error": "KeyError: 'rId2'"
+  },
+  "calamine": {
+   "status": "rejects",
+   "error": "CalamineError: Relationship not found"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "P04-two-main",
+  "kind": "broken",
+  "what": "two officeDocument relationships",
+  "ours": false,
+  "failed": [
+   "package_check",
+   "conforms_check"
+  ],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "P05-orphan-part",
+  "kind": "probe",
+  "what": "a part nothing points at (ECMA-376-1 §9.1.4: readers ignore it)",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "P06-entry-twice",
+  "kind": "broken",
+  "what": "sheet1.xml in the archive twice",
+  "ours": false,
+  "failed": [
+   "package_check"
+  ],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "P07-no-content-type",
+  "kind": "broken",
+  "what": "a reachable part with extension .bin and no content type",
+  "ours": false,
+  "failed": [
+   "package_check"
+  ],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "W13-same-cell-twice",
+  "kind": "broken",
+  "what": "A1 written twice in one row, with 1 and then 2",
+  "ours": false,
+  "failed": [
+   "workbook_check"
+  ],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "differs",
+   "diffs": [
+    "Limits!A1: read 2, model '1'"
+   ],
+   "count": 1
+  },
+  "calamine": {
+   "status": "differs",
+   "diffs": [
+    "Limits!A1: read 2.0, model '1'"
+   ],
+   "count": 1
+  },
+  "sheetjs": {
+   "status": "differs",
+   "diffs": [
+    "Limits!A1: read 2, model '1'"
+   ],
+   "count": 1
+  }
+ },
+ {
+  "name": "P09-names-differ-by-case",
+  "kind": "broken",
+  "what": "/xl/workbook.xml and /xl/Workbook.xml: one name to OPC",
+  "ours": false,
+  "failed": [
+   "package_check"
+  ],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "P08-sheet-typed-styles",
+  "kind": "broken",
+  "what": "sheet1.xml typed as a styles part",
+  "ours": false,
+  "failed": [
+   "conforms_check"
+  ],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "G01-control-char-shared",
+  "kind": "gap",
+  "what": "U+0001 in a shared string",
+  "ours": false,
+  "failed": [
+   "workbook_check"
+  ],
+  "expat": {
+   "status": "rejects",
+   "error": "ParseError: not well-formed (invalid token): line 2, column 126"
+  },
+  "openpyxl": {
+   "status": "rejects",
+   "error": "ParseError: not well-formed (invalid token): line 2, column 126"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "G02-control-char-inline",
+  "kind": "gap",
+  "what": "U+0001 in an inline string",
+  "ours": false,
+  "failed": [
+   "workbook_check"
+  ],
+  "expat": {
+   "status": "rejects",
+   "error": "ParseError: not well-formed (invalid token): line 2, column 131"
+  },
+  "openpyxl": {
+   "status": "rejects",
+   "error": "ParseError: not well-formed (invalid token): line 2, column 131"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "G03-nonchar-FFFE",
+  "kind": "gap",
+  "what": "U+FFFE in a string",
+  "ours": false,
+  "failed": [
+   "workbook_check"
+  ],
+  "expat": {
+   "status": "rejects",
+   "error": "ParseError: not well-formed (invalid token): line 2, column 131"
+  },
+  "openpyxl": {
+   "status": "rejects",
+   "error": "ParseError: not well-formed (invalid token): line 2, column 131"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "G04-spaces-inline",
+  "kind": "probe",
+  "what": "leading and trailing spaces, inline",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "G05-spaces-shared",
+  "kind": "probe",
+  "what": "leading and trailing spaces, shared",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "G06-crlf-shared",
+  "kind": "probe",
+  "what": "CR LF inside a shared string",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "G07-cr-inline",
+  "kind": "probe",
+  "what": "a lone CR inside an inline string",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "G08-tab-newline",
+  "kind": "probe",
+  "what": "tab and newline, inline",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "G09-long-string",
+  "kind": "gap",
+  "what": "a string of 40000 characters (Excel's limit is 32767)",
+  "ours": false,
+  "failed": [
+   "workbook_check"
+  ],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "G10-name-apostrophe",
+  "kind": "gap",
+  "what": "sheet name starting with an apostrophe",
+  "ours": false,
+  "failed": [
+   "workbook_check"
+  ],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "G11-name-History",
+  "kind": "gap",
+  "what": "sheet named History (Excel reserves it)",
+  "ours": false,
+  "failed": [
+   "workbook_check"
+  ],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "G12-name-emoji-31",
+  "kind": "gap",
+  "what": "16 emoji: 16 characters, 32 UTF-16 units",
+  "ours": false,
+  "failed": [
+   "workbook_check"
+  ],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "G13-int-2^53+1",
+  "kind": "gap",
+  "what": "the integer 2^53 + 1",
+  "ours": false,
+  "failed": [
+   "workbook_check"
+  ],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "differs",
+   "diffs": [
+    "Probe!A1: read 9007199254740992.0, model '9007199254740993'"
+   ],
+   "count": 1
+  },
+  "sheetjs": {
+   "status": "differs",
+   "diffs": [
+    "Probe!A1: read 9007199254740992, model '9007199254740993'"
+   ],
+   "count": 1
+  }
+ },
+ {
+  "name": "G14-int-10^400",
+  "kind": "gap",
+  "what": "the integer 10^400",
+  "ours": false,
+  "failed": [
+   "workbook_check"
+  ],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "differs",
+   "diffs": [
+    "Probe!A1: read inf, model '10000000000000000000000000000000000000000000000000000000000"
+   ],
+   "count": 1
+  },
+  "sheetjs": {
+   "status": "differs",
+   "diffs": [
+    "Probe!A1: read None, model '10000000000000000000000000000000000000000000000000000000000"
+   ],
+   "count": 1
+  }
+ },
+ {
+  "name": "G15-astral",
+  "kind": "probe",
+  "what": "an emoji and CJK text",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "G16-markup",
+  "kind": "probe",
+  "what": "XML specials in text and sheet name",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "G17-empty-sheet",
+  "kind": "probe",
+  "what": "a sheet with no rows",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "G18-many-sheets",
+  "kind": "probe",
+  "what": "255 sheets",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "G19-formula-looking",
+  "kind": "probe",
+  "what": "text =1+1 stored as a string",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "G20-empty-string",
+  "kind": "probe",
+  "what": "an empty shared string",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "differs",
+   "diffs": [
+    "Probe!A1: read None, model ''"
+   ],
+   "count": 1
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F0",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F1",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "differs",
+   "diffs": [
+    "Fuzz 1-1!Z1: read None, model ''"
+   ],
+   "count": 1
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F2",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "differs",
+   "diffs": [
+    "Fuzz 2-2!L4: read None, model ''",
+    "Fuzz 2-2!CX6: read None, model ''"
+   ],
+   "count": 2
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F3",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "differs",
+   "diffs": [
+    "Fuzz 3-1!J3: read None, model ''",
+    "Fuzz 3-1!AB8: read None, model ''",
+    "Fuzz 3-1!CR11: read None, model ''",
+    "Fuzz 3-1!AV16: read None, model ''"
+   ],
+   "count": 4
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F4",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "differs",
+   "diffs": [
+    "Fuzz 4-2!AR2: read None, model ''",
+    "Fuzz 4-2!B3: read None, model ''"
+   ],
+   "count": 2
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F5",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "differs",
+   "diffs": [
+    "Fuzz 5-1!X2: read None, model ''",
+    "Fuzz 5-1!BJ6: read None, model ''",
+    "Fuzz 5-1!AR10: read None, model ''",
+    "Fuzz 5-3!DH11: read None, model ''"
+   ],
+   "count": 4
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F6",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F7",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "differs",
+   "diffs": [
+    "Fuzz 7-1!V1: read None, model ''",
+    "Fuzz 7-1!AR3: read None, model ''",
+    "Fuzz 7-1!AH8: read None, model ''",
+    "Fuzz 7-1!BT8: read None, model ''",
+    "Fuzz 7-1!BZ10: read None, model ''"
+   ],
+   "count": 5
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F8",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "differs",
+   "diffs": [
+    "Fuzz 8-2!AR2: read None, model ''"
+   ],
+   "count": 1
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F9",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "differs",
+   "diffs": [
+    "Fuzz 9-1!B10: read None, model ''"
+   ],
+   "count": 1
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F10",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F11",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "differs",
+   "diffs": [
+    "Fuzz 11-1!R1: read None, model ''",
+    "Fuzz 11-3!AL4: read None, model ''",
+    "Fuzz 11-3!V8: read None, model ''"
+   ],
+   "count": 3
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F12",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F13",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "differs",
+   "diffs": [
+    "Fuzz 13-1!P3: read None, model ''",
+    "Fuzz 13-1!BF3: read None, model ''"
+   ],
+   "count": 2
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F14",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "differs",
+   "diffs": [
+    "Fuzz 14-2!Z3: read None, model ''"
+   ],
+   "count": 1
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F15",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "differs",
+   "diffs": [
+    "Fuzz 15-1!AD2: read None, model ''",
+    "Fuzz 15-1!AP2: read None, model ''"
+   ],
+   "count": 2
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F16",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "differs",
+   "diffs": [
+    "Fuzz 16-2!AT7: read None, model ''"
+   ],
+   "count": 1
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F17",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "differs",
+   "diffs": [
+    "Fuzz 17-3!AX2: read None, model ''",
+    "Fuzz 17-3!BV5: read None, model ''"
+   ],
+   "count": 2
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F18",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F19",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "differs",
+   "diffs": [
+    "Fuzz 19-1!Z13: read None, model ''"
+   ],
+   "count": 1
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F20",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "differs",
+   "diffs": [
+    "Fuzz 20-2!BB2: read None, model ''",
+    "Fuzz 20-2!X14: read None, model ''"
+   ],
+   "count": 2
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F21",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "differs",
+   "diffs": [
+    "Fuzz 21-1!X2: read None, model ''",
+    "Fuzz 21-1!J5: read None, model ''"
+   ],
+   "count": 2
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F22",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F23",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "differs",
+   "diffs": [
+    "Fuzz 23-1!V1: read None, model ''",
+    "Fuzz 23-1!P9: read None, model ''",
+    "Fuzz 23-1!CH9: read None, model ''",
+    "Fuzz 23-1!BT15: read None, model ''",
+    "Fuzz 23-1!AB18: read None, model ''"
+   ],
+   "count": 5
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F24",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F25",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F26",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "differs",
+   "diffs": [
+    "Fuzz 26-2!AX5: read None, model ''",
+    "Fuzz 26-2!AX14: read None, model ''"
+   ],
+   "count": 2
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F27",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "differs",
+   "diffs": [
+    "Fuzz 27-1!AF11: read None, model ''"
+   ],
+   "count": 1
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F28",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F29",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "differs",
+   "diffs": [
+    "Fuzz 29-1!B1: read None, model ''",
+    "Fuzz 29-3!CF15: read None, model ''"
+   ],
+   "count": 2
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F30",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F31",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "differs",
+   "diffs": [
+    "Fuzz 31-1!AD3: read None, model ''",
+    "Fuzz 31-1!BD6: read None, model ''",
+    "Fuzz 31-1!H8: read None, model ''"
+   ],
+   "count": 3
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F32",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "differs",
+   "diffs": [
+    "Fuzz 32-2!R13: read None, model ''",
+    "Fuzz 32-2!AT17: read None, model ''"
+   ],
+   "count": 2
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F33",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "differs",
+   "diffs": [
+    "Fuzz 33-1!AB1: read None, model ''",
+    "Fuzz 33-1!F5: read None, model ''",
+    "Fuzz 33-1!T6: read None, model ''",
+    "Fuzz 33-1!AX9: read None, model ''"
+   ],
+   "count": 4
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F34",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F35",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "differs",
+   "diffs": [
+    "Fuzz 35-1!F6: read None, model ''",
+    "Fuzz 35-1!R8: read None, model ''",
+    "Fuzz 35-3!CH12: read None, model ''"
+   ],
+   "count": 3
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F36",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F37",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F38",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F39",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "differs",
+   "diffs": [
+    "Fuzz 39-1!H1: read None, model ''",
+    "Fuzz 39-1!CP5: read None, model ''",
+    "Fuzz 39-1!H19: read None, model ''"
+   ],
+   "count": 3
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F40",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "differs",
+   "diffs": [
+    "Fuzz 40-2!Z19: read None, model ''",
+    "Fuzz 40-2!AN19: read None, model ''"
+   ],
+   "count": 2
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F41",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "differs",
+   "diffs": [
+    "Fuzz 41-1!F3: read None, model ''",
+    "Fuzz 41-3!H3: read None, model ''",
+    "Fuzz 41-3!H15: read None, model ''",
+    "Fuzz 41-3!F18: read None, model ''",
+    "Fuzz 41-3!AH24: read None, model ''"
+   ],
+   "count": 5
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F42",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F43",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "differs",
+   "diffs": [
+    "Fuzz 43-1!BT6: read None, model ''"
+   ],
+   "count": 1
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F44",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "differs",
+   "diffs": [
+    "Fuzz 44-2!AR13: read None, model ''"
+   ],
+   "count": 1
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F45",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F46",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "differs",
+   "diffs": [
+    "Fuzz 46-2!AP17: read None, model ''"
+   ],
+   "count": 1
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F47",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "differs",
+   "diffs": [
+    "Fuzz 47-1!R12: read None, model ''",
+    "Fuzz 47-1!AJ12: read None, model ''",
+    "Fuzz 47-1!B14: read None, model ''"
+   ],
+   "count": 3
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F48",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F49",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "differs",
+   "diffs": [
+    "Fuzz 49-1!AB3: read None, model ''"
+   ],
+   "count": 1
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F50",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "differs",
+   "diffs": [
+    "Fuzz 50-2!BH2: read None, model ''"
+   ],
+   "count": 1
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F51",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F52",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "differs",
+   "diffs": [
+    "Fuzz 52-2!AD10: read None, model ''",
+    "Fuzz 52-2!AH15: read None, model ''",
+    "Fuzz 52-2!N20: read None, model ''"
+   ],
+   "count": 3
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F53",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "differs",
+   "diffs": [
+    "Fuzz 53-1!BR3: read None, model ''",
+    "Fuzz 53-3!BH4: read None, model ''"
+   ],
+   "count": 2
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F54",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F55",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "differs",
+   "diffs": [
+    "Fuzz 55-1!AF3: read None, model ''"
+   ],
+   "count": 1
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F56",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "differs",
+   "diffs": [
+    "Fuzz 56-2!AD11: read None, model ''"
+   ],
+   "count": 1
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F57",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F58",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "differs",
+   "diffs": [
+    "Fuzz 58-2!CN10: read None, model ''"
+   ],
+   "count": 1
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F59",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "differs",
+   "diffs": [
+    "Fuzz 59-1!AL6: read None, model ''",
+    "Fuzz 59-1!BT6: read None, model ''",
+    "Fuzz 59-1!L26: read None, model ''"
+   ],
+   "count": 3
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F60",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F61",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F62",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "differs",
+   "diffs": [
+    "Fuzz 62-2!V1: read None, model ''",
+    "Fuzz 62-2!B6: read None, model ''"
+   ],
+   "count": 2
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F63",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F64",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "differs",
+   "diffs": [
+    "Fuzz 64-2!R10: read None, model ''",
+    "Fuzz 64-2!AD21: read None, model ''"
+   ],
+   "count": 2
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F65",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "differs",
+   "diffs": [
+    "Fuzz 65-1!V9: read None, model ''",
+    "Fuzz 65-1!AV9: read None, model ''",
+    "Fuzz 65-3!BP9: read None, model ''"
+   ],
+   "count": 3
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F66",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F67",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F68",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F69",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F70",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "differs",
+   "diffs": [
+    "Fuzz 70-2!D10: read None, model ''"
+   ],
+   "count": 1
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F71",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "differs",
+   "diffs": [
+    "Fuzz 71-1!V6: read None, model ''"
+   ],
+   "count": 1
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F72",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F73",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F74",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F75",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "differs",
+   "diffs": [
+    "Fuzz 75-1!AR8: read None, model ''",
+    "Fuzz 75-1!AZ15: read None, model ''"
+   ],
+   "count": 2
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F76",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F77",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "differs",
+   "diffs": [
+    "Fuzz 77-3!CV8: read None, model ''"
+   ],
+   "count": 1
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F78",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F79",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "differs",
+   "diffs": [
+    "Fuzz 79-1!BZ13: read None, model ''",
+    "Fuzz 79-1!BP26: read None, model ''"
+   ],
+   "count": 2
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F80",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "differs",
+   "diffs": [
+    "Fuzz 80-2!AF3: read None, model ''"
+   ],
+   "count": 1
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F81",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "differs",
+   "diffs": [
+    "Fuzz 81-1!V2: read None, model ''",
+    "Fuzz 81-1!BL13: read None, model ''"
+   ],
+   "count": 2
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F82",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "differs",
+   "diffs": [
+    "Fuzz 82-2!AH12: read None, model ''"
+   ],
+   "count": 1
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F83",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "differs",
+   "diffs": [
+    "Fuzz 83-1!CF5: read None, model ''",
+    "Fuzz 83-1!AD8: read None, model ''",
+    "Fuzz 83-3!D4: read None, model ''"
+   ],
+   "count": 3
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F84",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F85",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "differs",
+   "diffs": [
+    "Fuzz 85-1!N5: read None, model ''",
+    "Fuzz 85-1!AL11: read None, model ''",
+    "Fuzz 85-1!AB13: read None, model ''"
+   ],
+   "count": 3
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F86",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F87",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F88",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "differs",
+   "diffs": [
+    "Fuzz 88-2!BT9: read None, model ''",
+    "Fuzz 88-2!V11: read None, model ''",
+    "Fuzz 88-2!AL22: read None, model ''"
+   ],
+   "count": 3
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F89",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "differs",
+   "diffs": [
+    "Fuzz 89-1!AR4: read None, model ''",
+    "Fuzz 89-3!AZ3: read None, model ''"
+   ],
+   "count": 2
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F90",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F91",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F92",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F93",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F94",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "differs",
+   "diffs": [
+    "Fuzz 94-2!Z5: read None, model ''",
+    "Fuzz 94-2!P8: read None, model ''"
+   ],
+   "count": 2
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F95",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "differs",
+   "diffs": [
+    "Fuzz 95-1!D14: read None, model ''",
+    "Fuzz 95-1!F19: read None, model ''",
+    "Fuzz 95-1!Z22: read None, model ''",
+    "Fuzz 95-3!AD13: read None, model ''",
+    "Fuzz 95-3!BH13: read None, model ''"
+   ],
+   "count": 7
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F96",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F97",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "differs",
+   "diffs": [
+    "Fuzz 97-1!P13: read None, model ''"
+   ],
+   "count": 1
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F98",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F99",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "differs",
+   "diffs": [
+    "Fuzz 99-1!L3: read None, model ''",
+    "Fuzz 99-1!AL9: read None, model ''"
+   ],
+   "count": 2
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F100",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "differs",
+   "diffs": [
+    "Fuzz 100-2!B14: read None, model ''"
+   ],
+   "count": 1
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F101",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "differs",
+   "diffs": [
+    "Fuzz 101-1!AT1: read None, model ''",
+    "Fuzz 101-1!L13: read None, model ''",
+    "Fuzz 101-3!R13: read None, model ''"
+   ],
+   "count": 3
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F102",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F103",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "differs",
+   "diffs": [
+    "Fuzz 103-1!CP14: read None, model ''"
+   ],
+   "count": 1
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F104",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "differs",
+   "diffs": [
+    "Fuzz 104-2!P6: read None, model ''",
+    "Fuzz 104-2!BF16: read None, model ''",
+    "Fuzz 104-2!CJ16: read None, model ''"
+   ],
+   "count": 3
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F105",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "differs",
+   "diffs": [
+    "Fuzz 105-1!AL8: read None, model ''"
+   ],
+   "count": 1
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F106",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "differs",
+   "diffs": [
+    "Fuzz 106-2!F6: read None, model ''"
+   ],
+   "count": 1
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F107",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "differs",
+   "diffs": [
+    "Fuzz 107-1!AD5: read None, model ''",
+    "Fuzz 107-1!BR6: read None, model ''"
+   ],
+   "count": 2
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F108",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F109",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F110",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "differs",
+   "diffs": [
+    "Fuzz 110-2!BJ3: read None, model ''",
+    "Fuzz 110-2!AR12: read None, model ''"
+   ],
+   "count": 2
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F111",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "differs",
+   "diffs": [
+    "Fuzz 111-1!AR1: read None, model ''",
+    "Fuzz 111-1!AR5: read None, model ''"
+   ],
+   "count": 2
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F112",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "differs",
+   "diffs": [
+    "Fuzz 112-2!BJ5: read None, model ''",
+    "Fuzz 112-2!J9: read None, model ''",
+    "Fuzz 112-2!AB9: read None, model ''",
+    "Fuzz 112-2!AN9: read None, model ''",
+    "Fuzz 112-2!AL12: read None, model ''"
+   ],
+   "count": 5
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F113",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F114",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F115",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "differs",
+   "diffs": [
+    "Fuzz 115-1!T21: read None, model ''"
+   ],
+   "count": 1
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F116",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F117",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "differs",
+   "diffs": [
+    "Fuzz 117-1!AL1: read None, model ''",
+    "Fuzz 117-1!X19: read None, model ''",
+    "Fuzz 117-1!AN22: read None, model ''"
+   ],
+   "count": 3
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F118",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F119",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "differs",
+   "diffs": [
+    "Fuzz 119-1!AF3: read None, model ''",
+    "Fuzz 119-1!BD8: read None, model ''",
+    "Fuzz 119-1!BP8: read None, model ''",
+    "Fuzz 119-3!L4: read None, model ''",
+    "Fuzz 119-3!J11: read None, model ''"
+   ],
+   "count": 5
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F120",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F121",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "differs",
+   "diffs": [
+    "Fuzz 121-1!V8: read None, model ''"
+   ],
+   "count": 1
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F122",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F123",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F124",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "differs",
+   "diffs": [
+    "Fuzz 124-2!AX18: read None, model ''"
+   ],
+   "count": 1
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F125",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "differs",
+   "diffs": [
+    "Fuzz 125-3!R5: read None, model ''"
+   ],
+   "count": 1
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F126",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F127",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F128",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "differs",
+   "diffs": [
+    "Fuzz 128-2!Z2: read None, model ''"
+   ],
+   "count": 1
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F129",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F130",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "differs",
+   "diffs": [
+    "Fuzz 130-2!N4: read None, model ''",
+    "Fuzz 130-2!AP14: read None, model ''",
+    "Fuzz 130-2!F15: read None, model ''"
+   ],
+   "count": 3
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F131",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "differs",
+   "diffs": [
+    "Fuzz 131-3!AZ3: read None, model ''"
+   ],
+   "count": 1
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F132",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F133",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "differs",
+   "diffs": [
+    "Fuzz 133-1!AD1: read None, model ''"
+   ],
+   "count": 1
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F134",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F135",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "differs",
+   "diffs": [
+    "Fuzz 135-1!L10: read None, model ''",
+    "Fuzz 135-1!B21: read None, model ''"
+   ],
+   "count": 2
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F136",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "differs",
+   "diffs": [
+    "Fuzz 136-2!CF6: read None, model ''",
+    "Fuzz 136-2!AD21: read None, model ''"
+   ],
+   "count": 2
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F137",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "differs",
+   "diffs": [
+    "Fuzz 137-1!AN8: read None, model ''",
+    "Fuzz 137-1!AZ15: read None, model ''",
+    "Fuzz 137-1!V19: read None, model ''"
+   ],
+   "count": 3
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F138",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F139",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "differs",
+   "diffs": [
+    "Fuzz 139-1!BV4: read None, model ''"
+   ],
+   "count": 1
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F140",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F141",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F142",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "differs",
+   "diffs": [
+    "Fuzz 142-2!T5: read None, model ''",
+    "Fuzz 142-2!CP7: read None, model ''"
+   ],
+   "count": 2
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F143",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "differs",
+   "diffs": [
+    "Fuzz 143-1!AX6: read None, model ''",
+    "Fuzz 143-3!B13: read None, model ''"
+   ],
+   "count": 2
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F144",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F145",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F146",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "differs",
+   "diffs": [
+    "Fuzz 146-2!L2: read None, model ''"
+   ],
+   "count": 1
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F147",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "differs",
+   "diffs": [
+    "Fuzz 147-1!AR5: read None, model ''"
+   ],
+   "count": 1
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F148",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "differs",
+   "diffs": [
+    "Fuzz 148-2!BD10: read None, model ''",
+    "Fuzz 148-2!J13: read None, model ''"
+   ],
+   "count": 2
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F149",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F150",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F151",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "differs",
+   "diffs": [
+    "Fuzz 151-1!BJ20: read None, model ''"
+   ],
+   "count": 1
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F152",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "differs",
+   "diffs": [
+    "Fuzz 152-2!N11: read None, model ''"
+   ],
+   "count": 1
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F153",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F154",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F155",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "differs",
+   "diffs": [
+    "Fuzz 155-1!BD22: read None, model ''"
+   ],
+   "count": 1
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F156",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F157",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "differs",
+   "diffs": [
+    "Fuzz 157-1!BT3: read None, model ''",
+    "Fuzz 157-1!CV7: read None, model ''",
+    "Fuzz 157-1!X10: read None, model ''",
+    "Fuzz 157-1!L17: read None, model ''"
+   ],
+   "count": 4
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F158",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "differs",
+   "diffs": [
+    "Fuzz 158-2!X3: read None, model ''"
+   ],
+   "count": 1
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F159",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "differs",
+   "diffs": [
+    "Fuzz 159-1!X13: read None, model ''"
+   ],
+   "count": 1
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F160",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "differs",
+   "diffs": [
+    "Fuzz 160-2!CL5: read None, model ''",
+    "Fuzz 160-2!BF18: read None, model ''"
+   ],
+   "count": 2
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F161",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "differs",
+   "diffs": [
+    "Fuzz 161-3!X16: read None, model ''",
+    "Fuzz 161-3!AB21: read None, model ''"
+   ],
+   "count": 2
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F162",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F163",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "differs",
+   "diffs": [
+    "Fuzz 163-1!BB5: read None, model ''",
+    "Fuzz 163-1!J13: read None, model ''"
+   ],
+   "count": 2
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F164",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "differs",
+   "diffs": [
+    "Fuzz 164-2!AB7: read None, model ''"
+   ],
+   "count": 1
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F165",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "differs",
+   "diffs": [
+    "Fuzz 165-1!B4: read None, model ''",
+    "Fuzz 165-1!AX4: read None, model ''"
+   ],
+   "count": 2
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F166",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "differs",
+   "diffs": [
+    "Fuzz 166-2!B1: read None, model ''",
+    "Fuzz 166-2!N13: read None, model ''"
+   ],
+   "count": 2
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F167",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "differs",
+   "diffs": [
+    "Fuzz 167-1!BB2: read None, model ''",
+    "Fuzz 167-3!D3: read None, model ''"
+   ],
+   "count": 2
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F168",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F169",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F170",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "differs",
+   "diffs": [
+    "Fuzz 170-2!AD4: read None, model ''"
+   ],
+   "count": 1
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F171",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "differs",
+   "diffs": [
+    "Fuzz 171-1!R12: read None, model ''"
+   ],
+   "count": 1
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F172",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F173",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "differs",
+   "diffs": [
+    "Fuzz 173-1!AF7: read None, model ''",
+    "Fuzz 173-1!AB8: read None, model ''",
+    "Fuzz 173-1!AD15: read None, model ''"
+   ],
+   "count": 3
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F174",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F175",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "differs",
+   "diffs": [
+    "Fuzz 175-1!AR8: read None, model ''",
+    "Fuzz 175-1!V15: read None, model ''",
+    "Fuzz 175-1!BV15: read None, model ''",
+    "Fuzz 175-1!AT16: read None, model ''"
+   ],
+   "count": 4
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F176",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "differs",
+   "diffs": [
+    "Fuzz 176-2!J23: read None, model ''",
+    "Fuzz 176-2!B26: read None, model ''"
+   ],
+   "count": 2
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F177",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "differs",
+   "diffs": [
+    "Fuzz 177-1!AJ8: read None, model ''"
+   ],
+   "count": 1
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F178",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "differs",
+   "diffs": [
+    "Fuzz 178-2!AF3: read None, model ''",
+    "Fuzz 178-2!BL8: read None, model ''"
+   ],
+   "count": 2
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F179",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "differs",
+   "diffs": [
+    "Fuzz 179-1!H4: read None, model ''"
+   ],
+   "count": 1
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F180",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F181",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F182",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "differs",
+   "diffs": [
+    "Fuzz 182-2!AX15: read None, model ''",
+    "Fuzz 182-2!L17: read None, model ''",
+    "Fuzz 182-2!CH17: read None, model ''"
+   ],
+   "count": 3
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F183",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "differs",
+   "diffs": [
+    "Fuzz 183-1!AV1: read None, model ''",
+    "Fuzz 183-1!CL5: read None, model ''"
+   ],
+   "count": 2
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F184",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F185",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "differs",
+   "diffs": [
+    "Fuzz 185-1!AX5: read None, model ''",
+    "Fuzz 185-1!CD7: read None, model ''",
+    "Fuzz 185-3!BT4: read None, model ''",
+    "Fuzz 185-3!R10: read None, model ''"
+   ],
+   "count": 4
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F186",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F187",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F188",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F189",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F190",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "differs",
+   "diffs": [
+    "Fuzz 190-2!L2: read None, model ''",
+    "Fuzz 190-2!X5: read None, model ''"
+   ],
+   "count": 2
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F191",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "differs",
+   "diffs": [
+    "Fuzz 191-1!AZ13: read None, model ''"
+   ],
+   "count": 1
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F192",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F193",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "differs",
+   "diffs": [
+    "Fuzz 193-1!BL8: read None, model ''",
+    "Fuzz 193-1!H10: read None, model ''",
+    "Fuzz 193-1!AP15: read None, model ''",
+    "Fuzz 193-1!AP24: read None, model ''"
+   ],
+   "count": 4
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F194",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "differs",
+   "diffs": [
+    "Fuzz 194-2!H15: read None, model ''"
+   ],
+   "count": 1
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F195",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F196",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F197",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "differs",
+   "diffs": [
+    "Fuzz 197-1!X7: read None, model ''",
+    "Fuzz 197-1!J19: read None, model ''",
+    "Fuzz 197-3!L1: read None, model ''"
+   ],
+   "count": 3
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F198",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F199",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "differs",
+   "diffs": [
+    "Fuzz 199-1!BB4: read None, model ''"
+   ],
+   "count": 1
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F200",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F201",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "differs",
+   "diffs": [
+    "Fuzz 201-1!AD6: read None, model ''"
+   ],
+   "count": 1
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F202",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "differs",
+   "diffs": [
+    "Fuzz 202-2!T3: read None, model ''"
+   ],
+   "count": 1
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F203",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "differs",
+   "diffs": [
+    "Fuzz 203-3!J6: read None, model ''"
+   ],
+   "count": 1
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F204",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F205",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F206",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F207",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F208",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "differs",
+   "diffs": [
+    "Fuzz 208-2!R9: read None, model ''",
+    "Fuzz 208-2!R13: read None, model ''",
+    "Fuzz 208-2!Z13: read None, model ''",
+    "Fuzz 208-2!BL17: read None, model ''"
+   ],
+   "count": 4
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F209",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F210",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F211",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "differs",
+   "diffs": [
+    "Fuzz 211-1!CD8: read None, model ''",
+    "Fuzz 211-1!AR9: read None, model ''",
+    "Fuzz 211-1!BH18: read None, model ''"
+   ],
+   "count": 3
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F212",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "differs",
+   "diffs": [
+    "Fuzz 212-2!ED9: read None, model ''"
+   ],
+   "count": 1
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F213",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F214",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F215",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "differs",
+   "diffs": [
+    "Fuzz 215-1!CP2: read None, model ''",
+    "Fuzz 215-1!AB14: read None, model ''"
+   ],
+   "count": 2
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F216",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F217",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "differs",
+   "diffs": [
+    "Fuzz 217-1!AP1: read None, model ''",
+    "Fuzz 217-1!N14: read None, model ''",
+    "Fuzz 217-1!AH15: read None, model ''"
+   ],
+   "count": 3
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F218",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F219",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "differs",
+   "diffs": [
+    "Fuzz 219-1!AN7: read None, model ''"
+   ],
+   "count": 1
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F220",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F221",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "differs",
+   "diffs": [
+    "Fuzz 221-1!AX6: read None, model ''",
+    "Fuzz 221-3!N10: read None, model ''",
+    "Fuzz 221-3!AN10: read None, model ''",
+    "Fuzz 221-3!AD19: read None, model ''",
+    "Fuzz 221-3!V23: read None, model ''"
+   ],
+   "count": 5
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F222",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F223",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "differs",
+   "diffs": [
+    "Fuzz 223-1!T6: read None, model ''"
+   ],
+   "count": 1
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F224",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "differs",
+   "diffs": [
+    "Fuzz 224-2!N7: read None, model ''"
+   ],
+   "count": 1
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F225",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F226",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F227",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "differs",
+   "diffs": [
+    "Fuzz 227-1!CJ7: read None, model ''"
+   ],
+   "count": 1
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F228",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F229",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F230",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "differs",
+   "diffs": [
+    "Fuzz 230-2!R10: read None, model ''"
+   ],
+   "count": 1
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F231",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "differs",
+   "diffs": [
+    "Fuzz 231-1!AZ10: read None, model ''",
+    "Fuzz 231-1!F14: read None, model ''",
+    "Fuzz 231-1!AL16: read None, model ''",
+    "Fuzz 231-1!BN16: read None, model ''",
+    "Fuzz 231-1!V21: read None, model ''"
+   ],
+   "count": 5
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F232",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "differs",
+   "diffs": [
+    "Fuzz 232-2!P20: read None, model ''"
+   ],
+   "count": 1
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F233",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "differs",
+   "diffs": [
+    "Fuzz 233-1!BL4: read None, model ''",
+    "Fuzz 233-1!CT4: read None, model ''",
+    "Fuzz 233-1!X11: read None, model ''",
+    "Fuzz 233-1!AJ11: read None, model ''",
+    "Fuzz 233-1!BN14: read None, model ''"
+   ],
+   "count": 7
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F234",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F235",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "differs",
+   "diffs": [
+    "Fuzz 235-1!Z3: read None, model ''",
+    "Fuzz 235-1!AB4: read None, model ''"
+   ],
+   "count": 2
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F236",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F237",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F238",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F239",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "differs",
+   "diffs": [
+    "Fuzz 239-3!CH2: read None, model ''"
+   ],
+   "count": 1
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F240",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F241",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "differs",
+   "diffs": [
+    "Fuzz 241-1!N9: read None, model ''"
+   ],
+   "count": 1
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F242",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "differs",
+   "diffs": [
+    "Fuzz 242-2!AB9: read None, model ''",
+    "Fuzz 242-2!DD9: read None, model ''"
+   ],
+   "count": 2
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F243",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "differs",
+   "diffs": [
+    "Fuzz 243-1!AJ3: read None, model ''"
+   ],
+   "count": 1
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F244",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F245",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "differs",
+   "diffs": [
+    "Fuzz 245-3!T7: read None, model ''",
+    "Fuzz 245-3!F11: read None, model ''"
+   ],
+   "count": 2
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F246",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F247",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "differs",
+   "diffs": [
+    "Fuzz 247-1!V5: read None, model ''",
+    "Fuzz 247-1!H7: read None, model ''",
+    "Fuzz 247-1!D21: read None, model ''",
+    "Fuzz 247-1!AB21: read None, model ''"
+   ],
+   "count": 4
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F248",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F249",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F250",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F251",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "differs",
+   "diffs": [
+    "Fuzz 251-1!AV3: read None, model ''",
+    "Fuzz 251-1!BJ11: read None, model ''"
+   ],
+   "count": 2
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F252",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F253",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "differs",
+   "diffs": [
+    "Fuzz 253-1!CX5: read None, model ''"
+   ],
+   "count": 1
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F254",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F255",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "differs",
+   "diffs": [
+    "Fuzz 255-1!AB4: read None, model ''",
+    "Fuzz 255-1!BP12: read None, model ''"
+   ],
+   "count": 2
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F256",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F257",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "differs",
+   "diffs": [
+    "Fuzz 257-1!H9: read None, model ''",
+    "Fuzz 257-1!R11: read None, model ''"
+   ],
+   "count": 2
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F258",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F259",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "differs",
+   "diffs": [
+    "Fuzz 259-1!CR7: read None, model ''"
+   ],
+   "count": 1
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F260",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "differs",
+   "diffs": [
+    "Fuzz 260-2!D1: read None, model ''"
+   ],
+   "count": 1
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F261",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F262",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "differs",
+   "diffs": [
+    "Fuzz 262-2!R1: read None, model ''"
+   ],
+   "count": 1
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F263",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "differs",
+   "diffs": [
+    "Fuzz 263-3!AB5: read None, model ''",
+    "Fuzz 263-3!BH5: read None, model ''"
+   ],
+   "count": 2
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F264",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F265",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F266",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F267",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "differs",
+   "diffs": [
+    "Fuzz 267-1!AN3: read None, model ''"
+   ],
+   "count": 1
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F268",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "differs",
+   "diffs": [
+    "Fuzz 268-2!AF4: read None, model ''",
+    "Fuzz 268-2!AP17: read None, model ''"
+   ],
+   "count": 2
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F269",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "differs",
+   "diffs": [
+    "Fuzz 269-3!AB3: read None, model ''",
+    "Fuzz 269-3!X13: read None, model ''"
+   ],
+   "count": 2
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F270",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F271",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "differs",
+   "diffs": [
+    "Fuzz 271-1!AP12: read None, model ''",
+    "Fuzz 271-1!BD16: read None, model ''"
+   ],
+   "count": 2
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F272",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "differs",
+   "diffs": [
+    "Fuzz 272-2!X5: read None, model ''"
+   ],
+   "count": 1
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F273",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "differs",
+   "diffs": [
+    "Fuzz 273-1!BP3: read None, model ''",
+    "Fuzz 273-1!D15: read None, model ''",
+    "Fuzz 273-1!AJ18: read None, model ''"
+   ],
+   "count": 3
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F274",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F275",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "differs",
+   "diffs": [
+    "Fuzz 275-1!AZ3: read None, model ''",
+    "Fuzz 275-1!Z10: read None, model ''"
+   ],
+   "count": 2
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F276",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F277",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "differs",
+   "diffs": [
+    "Fuzz 277-1!L4: read None, model ''"
+   ],
+   "count": 1
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F278",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F279",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "differs",
+   "diffs": [
+    "Fuzz 279-1!N5: read None, model ''"
+   ],
+   "count": 1
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F280",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F281",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "differs",
+   "diffs": [
+    "Fuzz 281-1!AR2: read None, model ''",
+    "Fuzz 281-3!AJ8: read None, model ''"
+   ],
+   "count": 2
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F282",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F283",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "differs",
+   "diffs": [
+    "Fuzz 283-1!AJ2: read None, model ''"
+   ],
+   "count": 1
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F284",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F285",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F286",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F287",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "differs",
+   "diffs": [
+    "Fuzz 287-1!AD7: read None, model ''",
+    "Fuzz 287-1!N17: read None, model ''",
+    "Fuzz 287-3!AB2: read None, model ''",
+    "Fuzz 287-3!AZ7: read None, model ''"
+   ],
+   "count": 4
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F288",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F289",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F290",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "differs",
+   "diffs": [
+    "Fuzz 290-2!BF3: read None, model ''",
+    "Fuzz 290-2!X18: read None, model ''",
+    "Fuzz 290-2!AN20: read None, model ''"
+   ],
+   "count": 3
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F291",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "differs",
+   "diffs": [
+    "Fuzz 291-1!J13: read None, model ''"
+   ],
+   "count": 1
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F292",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "differs",
+   "diffs": [
+    "Fuzz 292-2!BJ8: read None, model ''",
+    "Fuzz 292-2!BJ10: read None, model ''"
+   ],
+   "count": 2
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F293",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "differs",
+   "diffs": [
+    "Fuzz 293-1!AH13: read None, model ''",
+    "Fuzz 293-3!CP11: read None, model ''",
+    "Fuzz 293-3!F19: read None, model ''"
+   ],
+   "count": 3
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F294",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F295",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "differs",
+   "diffs": [
+    "Fuzz 295-1!BB3: read None, model ''"
+   ],
+   "count": 1
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F296",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F297",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "differs",
+   "diffs": [
+    "Fuzz 297-1!AR10: read None, model ''"
+   ],
+   "count": 1
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F298",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "differs",
+   "diffs": [
+    "Fuzz 298-2!CX3: read None, model ''",
+    "Fuzz 298-2!AB15: read None, model ''",
+    "Fuzz 298-2!AH15: read None, model ''",
+    "Fuzz 298-2!AB18: read None, model ''"
+   ],
+   "count": 4
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "F299",
+  "kind": "fuzz",
+  "what": "random well-formed workbook",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "differs",
+   "diffs": [
+    "Fuzz 299-1!DD3: read None, model ''"
+   ],
+   "count": 1
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ }
+]
