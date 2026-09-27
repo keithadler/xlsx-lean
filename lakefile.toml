@@ -1,0 +1,10 @@
+name = "xlsx"
+version = "0.1.0"
+defaultTargets = ["Xlsx", "xlsxgen"]
+
+[[lean_lib]]
+name = "Xlsx"
+
+[[lean_exe]]
+name = "xlsxgen"
+root = "Main"
