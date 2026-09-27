@@ -1,7 +1,7 @@
 """Run the adversarial corpus through independent XLSX readers and compare with the model.
 
-    lake exe xlsxlab out/lab 300
-    python lab/differential.py out/lab [--sheetjs lab/node_modules] [--json out/lab/results.json]
+    lake exe xlsxgen lab out/lab 300
+    python tools/differential.py out/lab [--sheetjs lab/node_modules] [--json out/lab/results.json]
 
 Readers: a strict XML parser on every entry (expat), openpyxl (Python), calamine (Rust,
 via python-calamine) and SheetJS (JavaScript, via node). For every file the manifest
