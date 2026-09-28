@@ -88,6 +88,47 @@ structure Sheet where
   state : SheetState := .visible
   deriving DecidableEq, Repr
 
+/-- `<definedName name="Total" localSheetId="0">Sheet1!$A$1:$A$9</definedName>` -/
+structure DefinedName where
+  name : String
+  /-- The sheet it belongs to (`localSheetId`), or the whole workbook. -/
+  scope : Option Nat := none
+  formula : String
+  hidden : Bool := false
+  deriving DecidableEq, Repr
+
+/-- Names Excel reserves for itself: `_xlnm.Print_Area` and the rest. -/
+def builtinName (n : String) : Bool := n.startsWith "_xlnm."
+
+/-- Does it read as an R1C1 reference: `R`, `C`, `R5`, `C3`, `R1C1`? -/
+def looksR1C1 (n : String) : Bool :=
+  let cs := n.toList.map Char.toUpper
+  match cs with
+  | 'R' :: rest =>
+    let d := rest.takeWhile Char.isDigit
+    let rest := rest.drop d.length
+    rest.isEmpty || (match rest with
+      | 'C' :: r2 => r2.all Char.isDigit
+      | _ => false)
+  | 'C' :: rest => rest.all Char.isDigit
+  | _ => false
+
+/-- A name Excel accepts: it starts with a letter, `_` or `\`, goes on with letters,
+digits, `.`, `_` and `\`, is at most 255 characters, and does not read as a cell
+reference, either `A1` or `R1C1` (**Excel**). -/
+def validName (n : String) : Bool :=
+  builtinName n ||
+  (match n.toList with
+    | [] => false
+    | c :: rest =>
+      (c.isAlpha || c == '_' || c == '\\' || c.toNat > 127)
+      && rest.all (fun ch => ch.isAlphanum || ch == '.' || ch == '_' || ch == '\\' || ch.toNat > 127))
+  && n.length ≤ 255
+  && (match parseA1 n with
+      | some r => !decide r.Valid
+      | none => true)
+  && !looksR1C1 n
+
 structure Workbook where
   sheets : List Sheet
   sst : List String
@@ -99,7 +140,12 @@ structure Workbook where
   xfFormats : List Nat := []
   /-- `<workbookPr date1904="1"/>`: serial 0 is 1904-01-01. -/
   date1904 : Bool := false
+  /-- `<definedNames>`. -/
+  names : List DefinedName := []
   deriving DecidableEq, Repr
+
+/-- What two defined names are compared by: their scope and the name without case. -/
+def DefinedName.key (d : DefinedName) : Option Nat × List Char := (d.scope, d.name.toList.map Char.toLower)
 
 /-- The number format a style uses. -/
 def Workbook.formatOf (wb : Workbook) (style : Nat) : Nat := wb.xfFormats.getD style 0
@@ -227,6 +273,14 @@ structure Workbook.WellFormed (wb : Workbook) : Prop where
   /-- At least one sheet is visible: Excel repairs a workbook whose sheets are all
   hidden (**Excel**). -/
   one_visible : ∃ s ∈ wb.sheets, s.state = .visible
+  /-- Every defined name is one Excel accepts (**Excel**). -/
+  names_valid : ∀ d ∈ wb.names, validName d.name = true
+  /-- No two defined names in one scope differ only by case (**Excel**). -/
+  names_distinct : (wb.names.map DefinedName.key).Nodup
+  /-- A sheet-scoped name belongs to a sheet that exists (**ECMA-376**). -/
+  names_scoped : ∀ d ∈ wb.names, ∀ i, d.scope = some i → i < wb.sheets.length
+  /-- The formula a name stands for is writable text (**XML**, **Excel**). -/
+  names_text : ∀ d ∈ wb.names, textOk d.formula = true
   /-- Custom number format ids are unique (**ECMA-376**). -/
   numfmt_ids_unique : (wb.numFmts.map (·.1)).Nodup
   /-- `numFmtId` is given for every style, or for none (**ECMA-376**). -/
@@ -381,6 +435,10 @@ def Workbook.check (wb : Workbook) : Bool :=
   && Package.noDups (wb.sheets.map Sheet.key) && 0 < wb.styleCount
   && wb.sst.all textOk
   && wb.sheets.any (·.state == .visible)
+  && wb.names.all (fun d => validName d.name)
+  && Package.noDups (wb.names.map DefinedName.key)
+  && wb.names.all (fun d => match d.scope with | some i => i < wb.sheets.length | none => true)
+  && wb.names.all (fun d => textOk d.formula)
   && Package.noDups (wb.numFmts.map (·.1))
   && (wb.xfFormats.isEmpty || wb.xfFormats.length == wb.styleCount)
   && wb.xfFormats.all (fun id => id < 164 || (wb.numFmts.map (·.1)).contains id)
@@ -449,9 +507,14 @@ theorem Sheet.check_sound {wb s} (h : Sheet.check wb s = true) : s.WellFormed wb
 theorem Workbook.check_sound {wb : Workbook} (h : wb.check = true) : wb.WellFormed := by
   simp only [Workbook.check, Bool.and_eq_true, decide_eq_true_eq, List.all_eq_true,
     Bool.not_eq_true', List.isEmpty_eq_false_iff] at h
-  obtain ⟨⟨⟨⟨⟨⟨⟨⟨h1, h2⟩, h3⟩, h4⟩, h5⟩, hv⟩, h6⟩, h7⟩, h8⟩ := h
+  obtain ⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨h1, h2⟩, h3⟩, h4⟩, h5⟩, hv⟩, hn1⟩, hn2⟩, hn3⟩, hn4⟩, h6⟩, h7⟩, h8⟩ := h
   refine ⟨h1, fun s hs => Sheet.check_sound (h2 s hs), Package.noDups_sound h3, h4, h5,
-    by simpa [List.any_eq_true] using hv, Package.noDups_sound h6, ?_, ?_⟩
+    by simpa [List.any_eq_true] using hv, hn1, Package.noDups_sound hn2, ?_, hn4,
+    Package.noDups_sound h6, ?_, ?_⟩
+  · intro d hd i hi
+    have := hn3 d hd
+    rw [hi] at this
+    simpa using this
   · simp only [Bool.or_eq_true, List.isEmpty_iff, beq_iff_eq] at h7
     exact h7
   · intro id hid

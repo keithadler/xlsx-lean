@@ -1220,6 +1220,113 @@
   }
  },
  {
+  "name": "W22-name-like-a-cell",
+  "kind": "broken",
+  "what": "defined names A1 and R1C1",
+  "ours": false,
+  "failed": [
+   "workbook_check"
+  ],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "W23-name-with-space",
+  "kind": "broken",
+  "what": "a defined name with a space",
+  "ours": false,
+  "failed": [
+   "workbook_check"
+  ],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "W24-names-case-clash",
+  "kind": "broken",
+  "what": "defined names Total and TOTAL",
+  "ours": false,
+  "failed": [
+   "workbook_check"
+  ],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "W25-name-bad-scope",
+  "kind": "broken",
+  "what": "a name scoped to sheet 5 of 2",
+  "ours": false,
+  "failed": [
+   "workbook_check"
+  ],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "differs",
+   "diffs": [
+    "defined names [] != ['Local']"
+   ],
+   "count": 1
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "G27-names",
+  "kind": "probe",
+  "what": "workbook and sheet-scoped names, a print area, XFE1 (past XFD, so a name)",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
   "name": "G22-decimals",
   "kind": "probe",
   "what": "decimals 3.25, 1E-3, -6.02E23, and an error value",

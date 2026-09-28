@@ -88,9 +88,17 @@ def read_expat(path):
             ET.fromstring(z.read(name))
     return None
 
+NAMES = {}  # path -> defined names a reader saw, for the names comparison
+
 def read_openpyxl(path):
     import openpyxl
     wb = openpyxl.load_workbook(path, data_only=True)
+    names = list(wb.defined_names.keys())
+    for ws in wb.worksheets:
+        names += list(getattr(ws, "defined_names", {}).keys())
+        if getattr(ws, "print_area", None):  # openpyxl keeps print areas here, by design
+            names.append("_xlnm.Print_Area")
+    NAMES[("openpyxl", path)] = names
     out = []
     for ws in wb.worksheets:
         cells = {}
@@ -104,6 +112,11 @@ def read_openpyxl(path):
 def read_calamine(path):
     from python_calamine import CalamineWorkbook
     wb = CalamineWorkbook.from_path(path)
+    try:
+        NAMES[("calamine", path)] = [n[0] if isinstance(n, (tuple, list)) else getattr(n, "name", str(n))
+                                     for n in wb.defined_names]
+    except AttributeError:
+        pass
     out = []
     for name in wb.sheet_names:
         sh = wb.get_sheet_by_name(name)
@@ -135,6 +148,8 @@ def read_sheetjs_all(paths, node_modules):
 def sheetjs_sheets(o):
     if "error" in o:
         raise ValueError(o["error"])
+    if "names" in o:
+        NAMES[("sheetjs", o["path"])] = o["names"]
     out = []
     for s in o["sheets"]:
         cells = {}
@@ -170,6 +185,10 @@ def main():
                 sheets = {"openpyxl": read_openpyxl, "calamine": read_calamine,
                           "sheetjs": lambda p: sheetjs_sheets(sj[p])}[r](path)
                 d = compare(case, sheets)
+                want = sorted(case.get("names", []))
+                got = NAMES.get((r, path))
+                if want and got is not None and sorted(got) != want:
+                    d = d + [f"defined names {sorted(got)} != {want}"]
                 row[r] = {"status": "differs", "diffs": d[:5], "count": len(d)} if d else {"status": "ok"}
             except KeyboardInterrupt:
                 raise

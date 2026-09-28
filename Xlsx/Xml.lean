@@ -71,7 +71,13 @@ def Workbook.workbookXml (wb : Workbook) : String :=
       let st := match s.state with
         | .visible => "" | .hidden => " state=\"hidden\"" | .veryHidden => " state=\"veryHidden\""
       s!"<sheet name=\"{attrEscape s.name}\" sheetId=\"{numeral i}\"{st} r:id=\"{rid i}\"/>")
-  ++ "</sheets></workbook>"
+  ++ "</sheets>"
+  ++ (if wb.names.isEmpty then "" else
+      "<definedNames>" ++ String.join (wb.names.map fun d =>
+        let sc := match d.scope with | some i => s!" localSheetId=\"{i}\"" | none => ""
+        let hid := if d.hidden then " hidden=\"1\"" else ""
+        s!"<definedName name=\"{attrEscape d.name}\"{sc}{hid}>{xmlEscape d.formula}</definedName>") ++ "</definedNames>")
+  ++ "</workbook>"
 
 def Cell.xml (c : Cell) : String :=
   let r := c.ref.toA1

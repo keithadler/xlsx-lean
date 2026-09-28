@@ -42,6 +42,11 @@ W19-date-out-of-range        FAIL   ok        DIFFERS   CRASHES   DIFFERS
                                     sheetjs: Probe!A1: read '10113-09-19', model '10113-09-19'
 W20-numfmt-twice             FAIL   ok        ok        ok        ok       
 W21-all-hidden               FAIL   ok        ok        ok        ok       
+W22-name-like-a-cell         FAIL   ok        ok        ok        ok       
+W23-name-with-space          FAIL   ok        ok        ok        ok       
+W24-names-case-clash         FAIL   ok        ok        ok        ok       
+W25-name-bad-scope           FAIL   ok        DIFFERS   ok        ok       
+                                    openpyxl: defined names [] != ['Local']
 
 == gap ==
 case                         ours   expat     openpyxl  calamine  sheetjs  
@@ -84,6 +89,7 @@ G25-dates-1904               pass   ok        DIFFERS   DIFFERS   DIFFERS
                                     calamine: Probe!A1: read datetime.time(0, 0), model '1904-01-01'
                                     sheetjs: Probe!A1: read '1899-12-30', model '1904-01-01'
 G26-one-hidden               pass   ok        ok        ok        ok       
+G27-names                    pass   ok        ok        ok        ok       
 G22-decimals                 pass   ok        ok        DIFFERS   ok       
                                     calamine: Probe!D1: read None, model '#N/A'
 G23-formula-cached           pass   ok        ok        ok        ok       

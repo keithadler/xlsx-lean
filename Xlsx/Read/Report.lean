@@ -103,6 +103,15 @@ def workbookProblems (wb : Workbook) (sheetEntries : Array (String × String)) :
   if wb.styleCount == 0 then out := out.push ⟨"has_style", "styles", "cellXfs is empty"⟩
   if !wb.sheets.isEmpty && !wb.sheets.any (·.state == .visible) then
     out := out.push ⟨"one_visible", "workbook", "every sheet is hidden"⟩
+  let nkeys := wb.names.map DefinedName.key
+  for (i, d) in (List.range wb.names.length).zip wb.names do
+    let at_ := s!"name {d.name}"
+    if !validName d.name then
+      out := out.push ⟨"names_valid", at_, "not a name Excel accepts (letters, digits, . _ \\; not a cell reference; at most 255)"⟩
+    if (nkeys.take i).contains d.key then out := out.push ⟨"names_distinct", at_, "defined twice in one scope (names ignore case)"⟩
+    if let some j := d.scope then
+      if j ≥ wb.sheets.length then out := out.push ⟨"names_scoped", at_, s!"localSheetId {j}, but there are {wb.sheets.length} sheets"⟩
+    if !textOk d.formula then out := out.push ⟨"names_text", at_, cellProblems.textWhy d.formula⟩
   let ids := wb.numFmts.map (·.1)
   for (i, id) in (List.range ids.length).zip ids do
     if (ids.take i).contains id then out := out.push ⟨"numfmt_ids_unique", "styles", s!"numFmtId {id} is declared twice"⟩

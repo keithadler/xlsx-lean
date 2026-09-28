@@ -283,6 +283,7 @@ def load (entries : Array ZipEntry) : Loaded := Id.run do
   let mut numFmts : List (Nat × String) := []
   let mut xfFormats : List Nat := []
   let mut date1904 := false
+  let mut names : List DefinedName := []
   match pkg.mainDocument with
   | [main] =>
     let mainRels := pkg.relsOf (.part main)
@@ -309,6 +310,10 @@ def load (entries : Array ZipEntry) : Loaded := Id.run do
       let (root, n) := parsePart notes main.entryName d
       notes := n
       if let some root := root then
+        for d in ((root.child? "definedNames").map (·.childrenNamed "definedName")).getD #[] do
+          let scope := (d.attr? "localSheetId").bind String.toNat?
+          let hidden := d.attr? "hidden" == some "1" || d.attr? "hidden" == some "true"
+          names := names ++ [DefinedName.mk ((d.attr? "name").getD "") scope d.textContent hidden]
         if let some pr := root.child? "workbookPr" then
           date1904 := pr.attr? "date1904" == some "1" || pr.attr? "date1904" == some "true"
         for s in ((root.child? "sheets").map (·.childrenNamed "sheet")).getD #[] do
@@ -340,7 +345,7 @@ def load (entries : Array ZipEntry) : Loaded := Id.run do
   unless others.isEmpty do
     notes := notes.push ⟨.unmodeled, "package", s!"{others.length} parts outside the model: " ++
       ", ".intercalate (others.take 8 |>.map (·.entryName)) ++ (if others.length > 8 then ", …" else "")⟩
-  let wb : Workbook := { sheets, sst, styleCount, numFmts, xfFormats, date1904 }
+  let wb : Workbook := { sheets, sst, styleCount, numFmts, xfFormats, date1904, names }
   return { pkg := pkg, wb := wb, sheetEntries := sheetEntries, notes := notes, entries := entries.size }
 
 def loadFile (path : System.FilePath) : IO (Except String Loaded) := do

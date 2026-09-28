@@ -170,6 +170,19 @@ def probes : List Case :=
       { base with sheets := match base.sheets with
           | s :: rest => { s with state := .veryHidden } :: rest
           | [] => [] }
+  , c "W22-name-like-a-cell" "broken" "defined names A1 and R1C1"
+      { base with names := [{ name := "A1", formula := "Limits!$B$2" }, { name := "R1C1", formula := "Limits!$B$3" }] }
+  , c "W23-name-with-space" "broken" "a defined name with a space"
+      { base with names := [{ name := "Last Row", formula := "Limits!$B$4" }] }
+  , c "W24-names-case-clash" "broken" "defined names Total and TOTAL"
+      { base with names := [{ name := "Total", formula := "1" }, { name := "TOTAL", formula := "2" }] }
+  , c "W25-name-bad-scope" "broken" "a name scoped to sheet 5 of 2"
+      { base with names := [{ name := "Local", scope := some 5, formula := "1" }] }
+  , c "G27-names" "probe" "workbook and sheet-scoped names, a print area, XFE1 (past XFD, so a name)"
+      { base with names := [{ name := "LastColumn", formula := "Limits!$B$2" },
+          { name := "LastColumn", scope := some 1, formula := "Columns!$A$11" },
+          { name := "_xlnm.Print_Area", scope := some 0, formula := "Limits!$A$1:$C$8" },
+          { name := "XFE1", formula := "16385" }] }
   , c "G22-decimals" "probe" "decimals 3.25, 1E-3, -6.02E23, and an error value"
       (oneCellRow [⟨⟨1, 1⟩, .real 325 (-2), 0, none⟩, ⟨⟨2, 1⟩, .real 1 (-3), 0, none⟩,
         ⟨⟨3, 1⟩, .real (-602) 21, 0, none⟩, ⟨⟨4, 1⟩, .error "#N/A", 0, none⟩])
@@ -253,6 +266,7 @@ def Case.manifest (c : Case) : Json :=
     ("package_check", toJson c.pkg.check),
     ("conforms_check", toJson (conformsCheck c.pkg c.wb.sheets.length)),
     ("workbook_check", toJson c.wb.check),
+    ("names", Json.arr (c.wb.names.toArray.map fun d => Json.str d.name)),
     ("sheets", Json.arr (c.wb.sheets.map fun s => Json.mkObj [("name", s.name),
       ("cells", Json.arr (s.rows.flatMap fun r => r.cells.map fun cell =>
         Json.mkObj [("ref", cell.ref.toA1), ("value",

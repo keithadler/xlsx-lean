@@ -11,7 +11,8 @@ for (const path of process.argv.slice(2)) {
   let out;
   try {
     const wb = XLSX.readFile(path, { cellFormula: false, cellHTML: false, cellText: false, cellDates: true });
-    out = { path, sheets: wb.SheetNames.map(name => {
+    const names = ((wb.Workbook || {}).Names || []).map(n => n.Name);
+    out = { path, names, sheets: wb.SheetNames.map(name => {
       const ws = wb.Sheets[name];
       const cells = {};
       for (const k of Object.keys(ws)) if (k[0] !== '!') {
