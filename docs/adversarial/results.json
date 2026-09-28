@@ -529,11 +529,11 @@
   ],
   "expat": {
    "status": "rejects",
-   "error": "ParseError: not well-formed (invalid token): line 2, column 131"
+   "error": "ParseError: not well-formed (invalid token): line 2, column 152"
   },
   "openpyxl": {
    "status": "rejects",
-   "error": "ParseError: not well-formed (invalid token): line 2, column 131"
+   "error": "ParseError: not well-formed (invalid token): line 2, column 152"
   },
   "calamine": {
    "status": "ok"
@@ -552,11 +552,11 @@
   ],
   "expat": {
    "status": "rejects",
-   "error": "ParseError: not well-formed (invalid token): line 2, column 131"
+   "error": "ParseError: not well-formed (invalid token): line 2, column 152"
   },
   "openpyxl": {
    "status": "rejects",
-   "error": "ParseError: not well-formed (invalid token): line 2, column 131"
+   "error": "ParseError: not well-formed (invalid token): line 2, column 152"
   },
   "calamine": {
    "status": "ok"

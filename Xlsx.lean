@@ -10,3 +10,4 @@ import Xlsx.Read.Xml
 import Xlsx.Read.Zip
 import Xlsx.Read.Model
 import Xlsx.Read.Report
+import Xlsx.ZipProof
