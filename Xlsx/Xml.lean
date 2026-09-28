@@ -1,4 +1,4 @@
-import Xlsx.Build
+import Xlsx.Tables
 
 /-!
 # The XML of each part
@@ -98,12 +98,7 @@ def Cell.xml (c : Cell) : String :=
     if f.isEmpty then s!"<c r=\"{r}\"{s} t=\"inlineStr\"><is><t xml:space=\"preserve\">{xmlEscape t}</t></is></c>"
     else s!"<c r=\"{r}\"{s} t=\"str\">{f}<v>{xmlEscape t}</v></c>"
 
-def tableType : String := "application/vnd.openxmlformats-officedocument.spreadsheetml.table+xml"
-def tableRelType : String := "http://schemas.openxmlformats.org/officeDocument/2006/relationships/table"
 def hyperlinkRelType : String := "http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink"
-
-/-- `/xl/tables/table<k>.xml` -/
-def tablePart (k : Nat) : PartName := ⟨["xl", "tables"], "table" ++ numeral k, ["xml"]⟩
 
 def Table.xml (t : Table) (id : Nat) : String :=
   xmlHeader ++ s!"<table xmlns=\"{mainNs}\" id=\"{id}\" name=\"{attrEscape t.name}\" displayName=\"{attrEscape t.name}\" ref=\"{t.range.toA1}\""
@@ -113,8 +108,8 @@ def Table.xml (t : Table) (id : Nat) : String :=
       s!"<tableColumn id=\"{i + 1}\" name=\"{attrEscape c}\"/>")
   ++ "</tableColumns><tableStyleInfo name=\"TableStyleMedium2\" showRowStripes=\"1\"/></table>"
 
-/-- A sheet's tables are written only by a package that has their relationships
-(`Lab.withTables`); `Workbook.toPackage` does not lay tables out yet. -/
+/-- A sheet's `<tableParts>` name `rId1`, `rId2`, … of the sheet's relationships, which is
+how `Workbook.toPackage` lays them out. -/
 def Sheet.xml (s : Sheet) : String :=
   xmlHeader ++ s!"<worksheet xmlns=\"{mainNs}\" xmlns:r=\"{relNs}\">"
   ++ (match s.dimension with | some d => s!"<dimension ref=\"{d.toA1}\"/>" | none => "")
@@ -174,10 +169,11 @@ def partContent (wb : Workbook) (n : PartName) : String :=
   else match ((sheetNums wb.sheets.length).zip wb.sheets).find? (fun (i, _) => sheetPart i = n) with
     | some (_, s) => s.xml
     | none =>
-      let all := wb.sheets.flatMap (·.tables)
-      match ((List.range' 1 all.length).zip all).find? (fun (k, _) => tablePart k = n) with
-      | some (k, t) => t.xml k
-      | none => xmlHeader ++ "<empty/>"
+      -- a table part: /xl/tables/sheet<i>/table<j>.xml
+      let hits := ((sheetNums wb.sheets.length).zip wb.sheets).flatMap fun (i, s) =>
+        ((List.range' 1 s.tables.length).zip s.tables).filterMap fun (j, t) =>
+          if tablePartOf i j = n then some (t.xml (i * 1000 + j)) else none
+      hits.headD (xmlHeader ++ "<empty/>")
 
 /-- Every entry of an archive for package `p`, in the order a reader expects: content
 types first, then the relationships parts, then the parts. The entries are exactly

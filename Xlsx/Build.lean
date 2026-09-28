@@ -93,8 +93,6 @@ def layout (n : Nat) : Package where
   rels := [(.package, [⟨rid 1, .officeDocument, workbookPart, false, false⟩]),
            (.part workbookPart, workbookRels n)]
 
-def Workbook.toPackage (wb : Workbook) : Package := layout wb.sheets.length
-
 /-! ## It is a well-formed package, for every number of sheets -/
 
 theorem toLower_digitChar : ∀ d : Fin 10, (digitChar d).toLower = digitChar d := by decide
@@ -258,10 +256,6 @@ theorem layout_wellFormed (n : Nat) : (layout n).WellFormed where
   one_main := by
     simp [Package.mainDocument, Package.relsOf, layout]
 
-/-- **Every workbook lays out as a well-formed package**, whatever its number of sheets. -/
-theorem Workbook.toPackage_wellFormed (wb : Workbook) : wb.toPackage.WellFormed :=
-  layout_wellFormed _
-
 /-- And it has no orphans: every part is found from the package. -/
 theorem workbookRels_internal {n : Nat} : ∀ r ∈ workbookRels n, r.external = false := by
   intro r hr
@@ -284,9 +278,6 @@ theorem layout_noOrphans (n : Nat) : (layout n).NoOrphans := by
       (by simp [workbookRels]), rfl⟩
   · exact ⟨_, hstep ⟨rid i, .worksheet, ⟨["worksheets"], "sheet" ++ numeral i, ["xml"]⟩, false, false⟩
       (by simp only [workbookRels, List.mem_append, List.mem_map]; exact Or.inl ⟨i, hi, rfl⟩), rfl⟩
-
-theorem Workbook.toPackage_noOrphans (wb : Workbook) : wb.toPackage.NoOrphans :=
-  layout_noOrphans _
 
 /-! ## And it follows the SpreadsheetML rules on top -/
 
@@ -354,8 +345,5 @@ theorem layout_conforms (n : Nat) : SpreadsheetConforms (layout n) n where
     · cases ht
     · simp at hr
 
-theorem Workbook.toPackage_conforms (wb : Workbook) :
-    SpreadsheetConforms wb.toPackage wb.sheets.length :=
-  layout_conforms _
 
 end Xlsx

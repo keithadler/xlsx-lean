@@ -2,7 +2,7 @@
 
 **The XLSX file format, as a Lean proof, and a checker for your own files.** A model of what is inside an `.xlsx` file (the package, its content types and relationships, the workbook, sheets, rows, cells and shared strings), the rules a reader needs, checkers for those rules proved sound, and theorems about every workbook at once:
 
-> **Every workbook, with any number of sheets, lays out as a well-formed package**, and follows the SpreadsheetML rules on top of that. **And the ZIP the writer produces reads back to exactly the entries written.**
+> **Every workbook, with any number of sheets and tables, lays out as a well-formed package**, and follows the SpreadsheetML rules on top of that. **And the ZIP the writer produces reads back to exactly the entries written.**
 
 `xlsxlean check` reads any real `.xlsx` (compressed with lean-zip's verified DEFLATE decoder, or stored), builds the same model, runs the proved checkers on it, and says which rule a file breaks and where. It checked all 66 files in calamine's test suite in under three seconds.
 
@@ -59,9 +59,9 @@ Plain Lean 4 (v4.35.0-rc2) plus [lean-zip](https://github.com/kim-em/lean-zip): 
 
 | Theorem | What it says |
 |---|---|
-| [`Workbook.toPackage_wellFormed`](Xlsx/Build.lean#L262) | For **every** workbook: no two entries share a name (ignoring case, as OPC requires), every entry has a content type, every relationship comes from a real part and lands on one, relationship ids are unique, and there is exactly one main document. |
-| [`Workbook.toPackage_conforms`](Xlsx/Build.lean#L351) | The main document is typed as a workbook, and there is one worksheet relationship per sheet, each landing on a part typed as a worksheet. |
-| [`Workbook.toPackage_noOrphans`](Xlsx/Build.lean#L282) | Every part can be reached by following relationships from the package. |
+| [`Workbook.toPackage_wellFormed`](Xlsx/Tables.lean) | For **every** workbook, tables included (each table its own part, reached through its sheet's relationships): no two entries share a name (ignoring case, as OPC requires), every entry has a content type, every relationship comes from a real part and lands on one, relationship ids are unique, and there is exactly one main document. |
+| [`Workbook.toPackage_conforms`](Xlsx/Tables.lean) | The main document is typed as a workbook, and there is one worksheet relationship per sheet, each landing on a part typed as a worksheet. |
+| [`Workbook.toPackage_noOrphans`](Xlsx/Tables.lean) | Every part, every table included, can be reached by following relationships from the package. |
 | [`Archive.readSpec_archive`](Xlsx/ZipProof.lean#L134) | For any list of entries that fits a plain ZIP, reading the archive as a ZIP reader does (end record, central directory, each local header) gives back every entry's name and bytes, in order. |
 | [`Package.check_sound`](Xlsx/Package.lean#L285), [`conformsCheck_sound`](Xlsx/Build.lean#L312), [`Workbook.check_sound`](Xlsx/Workbook.lean#L328) | The checkers that run are sound: a package or workbook they accept follows every rule. `xlsxlean check` uses these. |
 | [`Cell.WellFormed.resolves`](Xlsx/Workbook.lean#L184) | In a well-formed workbook every cell has a value: no shared string index dangles. |
@@ -205,7 +205,7 @@ To see the pictures, open the folder in [Lean Studio](https://github.com/keithad
 - **The readers.** The XML parser and the ByteArray ZIP reader behind `xlsxlean check` are ordinary code. What is proved is what the checkers conclude about the model the reader builds, and that the writer's ZIP reads back correctly (`readSpec_archive`, about the specification reader that follows the same steps). The production reader is tested: every one of the 312 valid corpus files reads back identical to the model it was written from.
 - **DEFLATE and CRC-32** come from lean-zip, where they are proved; the reader uses the same decoder the round-trip theorem is about.
 - **The XML text.** The writer renders the model to XML and nothing about that step is proved; four readers check it on every corpus file.
-- **The model is a subset of SpreadsheetML.** It describes the package (external relationships included), sheets, rows and cells, shared strings, number formats and dates, merged ranges, the used range, sheet visibility, defined names, tables and hyperlinks. It does not describe rich text formatting, fonts and fills, charts, drawings, comments, conditional formats or data validation; the reader lists what it finds of those as not modeled. `Workbook.toPackage` does not lay out tables yet (the corpus writes its table files with their relationships by hand), so the layout theorems cover workbooks without tables. Formulas are kept as written, not evaluated. Shared formulas are not expanded.
+- **The model is a subset of SpreadsheetML.** It describes the package (external relationships included), sheets, rows and cells, shared strings, number formats and dates, merged ranges, the used range, sheet visibility, defined names, tables and hyperlinks. It does not describe rich text formatting, fonts and fills, charts, drawings, comments, conditional formats or data validation; the reader lists what it finds of those as not modeled. Formulas are kept as written, not evaluated. Shared formulas are not expanded.
 - **Lean strings are Unicode scalar values,** so the unpaired surrogates a real file can contain cannot be represented at all.
 - **Memory.** The reader holds each part's whole XML tree: a sheet of 500,000 cells (100,000 rows) checks in about 3.5 seconds but takes 700 MB. openpyxl reads the same file in 4.1 seconds; calamine in 0.4.
 - **Excel itself was not in the loop.** Its limits come from Microsoft's published specifications, not from running Excel.
@@ -217,7 +217,8 @@ To see the pictures, open the folder in [Lean Studio](https://github.com/keithad
 | `Xlsx/CellRef.lean` | Column names, A1 references, the limits |
 | `Xlsx/Package.lean` | Open Packaging Conventions: parts, content types, relationships, the checker |
 | `Xlsx/Workbook.lean` | SpreadsheetML: sheets, rows, cells, shared strings, the checker |
-| `Xlsx/Build.lean` | The layout of any workbook as a package, and the theorems about it |
+| `Xlsx/Build.lean` | The layout of any workbook's sheets as a package, and the theorems about it |
+| `Xlsx/Tables.lean` | Tables in the layout: `Workbook.toPackage` and its three theorems, for any number of tables |
 | `Xlsx/Example.lean` | The example workbook, checked by the kernel |
 | `Xlsx/Xml.lean` | The XML writer (not verified) |
 | `Xlsx/Zip.lean`, `Xlsx/ZipProof.lean` | The ZIP writer and the proof that it reads back |

@@ -2,6 +2,7 @@ import Xlsx.CellRef
 import Xlsx.Package
 import Xlsx.Workbook
 import Xlsx.Build
+import Xlsx.Tables
 import Xlsx.Xml
 import Xlsx.Zip
 import Xlsx.Example

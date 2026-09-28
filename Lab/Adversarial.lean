@@ -58,33 +58,22 @@ def numw (n : Int) : Workbook := oneCell ⟨⟨1, 1⟩, .number n, 0, none⟩
 
 def lay : Package := layout 2
 
-/-- A case whose sheets have tables: the layout, plus a part per table, each sheet's
-relationships to its tables, and their content types. -/
+/-- A case written with `Workbook.toPackage`, which lays out tables, plus each sheet's
+hyperlink relationships (external addresses), which the model does not carry. -/
 def withTables (name kind what : String) (wb : Workbook) : Case := Id.run do
-  let base := layout wb.sheets.length
-  let mut k := 1
-  let mut tparts : List PartName := []
-  let mut srels : List (Source × List Rel) := []
-  let mut sheets : List Sheet := []
+  let tabled := { wb with sheets := wb.sheets.map fun s =>
+    { s with relIds := (List.range' 1 s.tables.length).map rid ++ s.relIds } }
+  let base := tabled.toPackage
+  let mut rels := base.rels
   for (i, s) in (sheetNums wb.sheets.length).zip wb.sheets do
     let links := s.hyperlinks.filterMap (·.rid) |>.filter (s.relIds.contains ·)
-    if !(s.tables.isEmpty && links.isEmpty) then
-      let mut rs : List Rel := []
-      for j in List.range s.tables.length do
-        rs := rs ++ [Rel.mk s!"rId{j + 1}" (.other tableRelType) (tablePart k) true false]
-        tparts := tparts ++ [tablePart k]
-        k := k + 1
-      for id in links do
-        rs := rs ++ [Rel.mk id (.other hyperlinkRelType) ⟨[], "https://example.com/" ++ id, []⟩ false true]
-      srels := srels ++ [(.part (sheetPart i), rs)]
-      sheets := sheets ++ [{ s with relIds := rs.map (·.id) }]
-    else
-      sheets := sheets ++ [s]
-  let wb := { wb with sheets }
-  return { name, kind, what, wb, pkg := { base with
-    parts := base.parts ++ tparts
-    overrides := base.overrides ++ tparts.map (·, tableType)
-    rels := base.rels ++ srels } }
+    unless links.isEmpty do
+      let extra := links.map fun id => Rel.mk id (.other hyperlinkRelType) ⟨[], "https://example.com/" ++ id, []⟩ false true
+      if rels.any (·.1 == .part (sheetPart i)) then
+        rels := rels.map fun (src, rs) => if src == .part (sheetPart i) then (src, rs ++ extra) else (src, rs)
+      else
+        rels := rels ++ [(.part (sheetPart i), extra)]
+  return { name, kind, what, wb := tabled, pkg := { base with rels } }
 
 def factsTable : Table := { name := "Facts", range := ⟨⟨1, 1⟩, ⟨3, 6⟩⟩, columns := ["Fact", "Value", "Proved by"] }
 
