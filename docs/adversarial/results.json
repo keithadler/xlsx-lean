@@ -601,11 +601,11 @@
   ],
   "expat": {
    "status": "rejects",
-   "error": "ParseError: not well-formed (invalid token): line 2, column 152"
+   "error": "ParseError: not well-formed (invalid token): line 2, column 230"
   },
   "openpyxl": {
    "status": "rejects",
-   "error": "ParseError: not well-formed (invalid token): line 2, column 152"
+   "error": "ParseError: not well-formed (invalid token): line 2, column 230"
   },
   "calamine": {
    "status": "ok"
@@ -624,11 +624,11 @@
   ],
   "expat": {
    "status": "rejects",
-   "error": "ParseError: not well-formed (invalid token): line 2, column 152"
+   "error": "ParseError: not well-formed (invalid token): line 2, column 230"
   },
   "openpyxl": {
    "status": "rejects",
-   "error": "ParseError: not well-formed (invalid token): line 2, column 152"
+   "error": "ParseError: not well-formed (invalid token): line 2, column 230"
   },
   "calamine": {
    "status": "ok"
@@ -1313,6 +1313,130 @@
   "what": "workbook and sheet-scoped names, a print area, XFE1 (past XFD, so a name)",
   "ours": true,
   "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "G28-table",
+  "kind": "probe",
+  "what": "a table over A1:C6 whose header row shows its column names",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "W26-table-header",
+  "kind": "broken",
+  "what": "a table whose second column is named Amount, over a header cell that says Value",
+  "ours": false,
+  "failed": [
+   "workbook_check"
+  ],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "W27-tables-overlap",
+  "kind": "broken",
+  "what": "tables at A1:C6 and B2:C3",
+  "ours": false,
+  "failed": [
+   "workbook_check"
+  ],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "W28-table-over-merge",
+  "kind": "broken",
+  "what": "a table at A7:C8 over the merge A8:C8",
+  "ours": false,
+  "failed": [
+   "workbook_check"
+  ],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "W29-table-name-clash",
+  "kind": "broken",
+  "what": "a table and a defined name both called Facts",
+  "ours": false,
+  "failed": [
+   "workbook_check"
+  ],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "W30-table-columns-twice",
+  "kind": "broken",
+  "what": "a table with columns Fact and fact",
+  "ours": false,
+  "failed": [
+   "workbook_check"
+  ],
   "expat": {
    "status": "ok"
   },

@@ -57,6 +57,31 @@ def shd (s : String) : Workbook := oneCell ⟨⟨1, 1⟩, .shared 0, 0, none⟩ 
 def numw (n : Int) : Workbook := oneCell ⟨⟨1, 1⟩, .number n, 0, none⟩
 
 def lay : Package := layout 2
+
+/-- A case whose sheets have tables: the layout, plus a part per table, each sheet's
+relationships to its tables, and their content types. -/
+def withTables (name kind what : String) (wb : Workbook) : Case := Id.run do
+  let base := layout wb.sheets.length
+  let mut k := 1
+  let mut tparts : List PartName := []
+  let mut srels : List (Source × List Rel) := []
+  for (i, s) in (sheetNums wb.sheets.length).zip wb.sheets do
+    unless s.tables.isEmpty do
+      let mut rs : List Rel := []
+      for j in List.range s.tables.length do
+        rs := rs ++ [Rel.mk s!"rId{j + 1}" (.other tableRelType) (tablePart k) true]
+        tparts := tparts ++ [tablePart k]
+        k := k + 1
+      srels := srels ++ [(.part (sheetPart i), rs)]
+  return { name, kind, what, wb, pkg := { base with
+    parts := base.parts ++ tparts
+    overrides := base.overrides ++ tparts.map (·, tableType)
+    rels := base.rels ++ srels } }
+
+def factsTable : Table := { name := "Facts", range := ⟨⟨1, 1⟩, ⟨3, 6⟩⟩, columns := ["Fact", "Value", "Proved by"] }
+
+def limitsWithTables (ts : List Table) (names : List DefinedName := []) : Workbook :=
+  { base with sheets := { Example.limits with tables := ts } :: base.sheets.tail, names }
 def wbRelsWith (f : List Rel → List Rel) : Package :=
   { lay with rels := lay.rels.map fun (s, rs) => if s = .part workbookPart then (s, f rs) else (s, rs) }
 
@@ -183,6 +208,18 @@ def probes : List Case :=
           { name := "LastColumn", scope := some 1, formula := "Columns!$A$11" },
           { name := "_xlnm.Print_Area", scope := some 0, formula := "Limits!$A$1:$C$8" },
           { name := "XFE1", formula := "16385" }] }
+  , withTables "G28-table" "probe" "a table over A1:C6 whose header row shows its column names"
+      (limitsWithTables [factsTable])
+  , withTables "W26-table-header" "broken" "a table whose second column is named Amount, over a header cell that says Value"
+      (limitsWithTables [{ factsTable with columns := ["Fact", "Amount", "Proved by"] }])
+  , withTables "W27-tables-overlap" "broken" "tables at A1:C6 and B2:C3"
+      (limitsWithTables [factsTable, { name := "Inner", range := ⟨⟨2, 2⟩, ⟨3, 3⟩⟩, header := false, columns := ["x", "y"] }])
+  , withTables "W28-table-over-merge" "broken" "a table at A7:C8 over the merge A8:C8"
+      (limitsWithTables [{ name := "Footer", range := ⟨⟨1, 7⟩, ⟨3, 8⟩⟩, header := false, columns := ["a", "b", "c"] }])
+  , withTables "W29-table-name-clash" "broken" "a table and a defined name both called Facts"
+      (limitsWithTables [factsTable] [{ name := "FACTS", formula := "Limits!$A$1" }])
+  , withTables "W30-table-columns-twice" "broken" "a table with columns Fact and fact"
+      (limitsWithTables [{ name := "Twice", range := ⟨⟨1, 2⟩, ⟨2, 6⟩⟩, header := false, columns := ["Fact", "fact"] }])
   , c "G22-decimals" "probe" "decimals 3.25, 1E-3, -6.02E23, and an error value"
       (oneCellRow [⟨⟨1, 1⟩, .real 325 (-2), 0, none⟩, ⟨⟨2, 1⟩, .real 1 (-3), 0, none⟩,
         ⟨⟨3, 1⟩, .real (-602) 21, 0, none⟩, ⟨⟨4, 1⟩, .error "#N/A", 0, none⟩])
@@ -268,6 +305,7 @@ def Case.manifest (c : Case) : Json :=
     ("workbook_check", toJson c.wb.check),
     ("names", Json.arr (c.wb.names.toArray.map fun d => Json.str d.name)),
     ("sheets", Json.arr (c.wb.sheets.map fun s => Json.mkObj [("name", s.name),
+      ("tables", Json.arr (s.tables.toArray.map fun t => Json.str t.name)),
       ("cells", Json.arr (s.rows.flatMap fun r => r.cells.map fun cell =>
         Json.mkObj [("ref", cell.ref.toA1), ("value",
           Read.withDate c.wb cell (valueJson (cell.stored.resolve c.wb.sst)))]).toArray)]).toArray)]

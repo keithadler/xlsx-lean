@@ -95,8 +95,24 @@ def Cell.xml (c : Cell) : String :=
     if f.isEmpty then s!"<c r=\"{r}\"{s} t=\"inlineStr\"><is><t xml:space=\"preserve\">{xmlEscape t}</t></is></c>"
     else s!"<c r=\"{r}\"{s} t=\"str\">{f}<v>{xmlEscape t}</v></c>"
 
+def tableType : String := "application/vnd.openxmlformats-officedocument.spreadsheetml.table+xml"
+def tableRelType : String := "http://schemas.openxmlformats.org/officeDocument/2006/relationships/table"
+
+/-- `/xl/tables/table<k>.xml` -/
+def tablePart (k : Nat) : PartName := ⟨["xl", "tables"], "table" ++ numeral k, ["xml"]⟩
+
+def Table.xml (t : Table) (id : Nat) : String :=
+  xmlHeader ++ s!"<table xmlns=\"{mainNs}\" id=\"{id}\" name=\"{attrEscape t.name}\" displayName=\"{attrEscape t.name}\" ref=\"{t.range.toA1}\""
+  ++ (if t.header then ">" ++ s!"<autoFilter ref=\"{t.range.toA1}\"/>" else " headerRowCount=\"0\">")
+  ++ s!"<tableColumns count=\"{t.columns.length}\">"
+  ++ String.join ((List.range t.columns.length).zip t.columns |>.map fun (i, c) =>
+      s!"<tableColumn id=\"{i + 1}\" name=\"{attrEscape c}\"/>")
+  ++ "</tableColumns><tableStyleInfo name=\"TableStyleMedium2\" showRowStripes=\"1\"/></table>"
+
+/-- A sheet's tables are written only by a package that has their relationships
+(`Lab.withTables`); `Workbook.toPackage` does not lay tables out yet. -/
 def Sheet.xml (s : Sheet) : String :=
-  xmlHeader ++ s!"<worksheet xmlns=\"{mainNs}\">"
+  xmlHeader ++ s!"<worksheet xmlns=\"{mainNs}\" xmlns:r=\"{relNs}\">"
   ++ (match s.dimension with | some d => s!"<dimension ref=\"{d.toA1}\"/>" | none => "")
   ++ "<sheetData>"
   ++ String.join (s.rows.map fun r =>
@@ -105,6 +121,10 @@ def Sheet.xml (s : Sheet) : String :=
   ++ (if s.merges.isEmpty then "" else
       s!"<mergeCells count=\"{s.merges.length}\">"
       ++ String.join (s.merges.map fun m => s!"<mergeCell ref=\"{m.toA1}\"/>") ++ "</mergeCells>")
+  ++ (if s.tables.isEmpty then "" else
+      s!"<tableParts count=\"{s.tables.length}\">"
+      ++ String.join ((List.range s.tables.length).map fun j => s!"<tablePart r:id=\"rId{j + 1}\"/>")
+      ++ "</tableParts>")
   ++ "</worksheet>"
 
 def Workbook.sstXml (wb : Workbook) : String :=
@@ -144,7 +164,11 @@ def partContent (wb : Workbook) (n : PartName) : String :=
   else if n = sstPart then wb.sstXml
   else match ((sheetNums wb.sheets.length).zip wb.sheets).find? (fun (i, _) => sheetPart i = n) with
     | some (_, s) => s.xml
-    | none => xmlHeader ++ "<empty/>"
+    | none =>
+      let all := wb.sheets.flatMap (·.tables)
+      match ((List.range' 1 all.length).zip all).find? (fun (k, _) => tablePart k = n) with
+      | some (k, t) => t.xml k
+      | none => xmlHeader ++ "<empty/>"
 
 /-- Every entry of an archive for package `p`, in the order a reader expects: content
 types first, then the relationships parts, then the parts. The entries are exactly

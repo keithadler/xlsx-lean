@@ -103,6 +103,13 @@ def workbookProblems (wb : Workbook) (sheetEntries : Array (String × String)) :
   if wb.styleCount == 0 then out := out.push ⟨"has_style", "styles", "cellXfs is empty"⟩
   if !wb.sheets.isEmpty && !wb.sheets.any (·.state == .visible) then
     out := out.push ⟨"one_visible", "workbook", "every sheet is hidden"⟩
+  let tnames := (wb.sheets.flatMap (·.tables)).map (·.name)
+  let wnames := (wb.names.filter (·.scope.isNone)).map (·.name)
+  let lower (x : String) := x.toList.map Char.toLower
+  for (i, n) in (List.range tnames.length).zip tnames do
+    if !validName n then out := out.push ⟨"tables_named", s!"table {n}", "not a name Excel accepts"⟩
+    if (tnames.take i).any (lower · == lower n) then out := out.push ⟨"tables_unique", s!"table {n}", "another table has this name (names ignore case)"⟩
+    if wnames.any (lower · == lower n) then out := out.push ⟨"tables_unique", s!"table {n}", "a defined name has this name"⟩
   let nkeys := wb.names.map DefinedName.key
   for (i, d) in (List.range wb.names.length).zip wb.names do
     let at_ := s!"name {d.name}"
@@ -154,6 +161,16 @@ def workbookProblems (wb : Workbook) (sheetEntries : Array (String × String)) :
         out := out.push ⟨"dimension_covers", place, s!"dimension {d.toA1} leaves out {outside.length} cell(s), first {(outside.head?.map (·.ref.toA1)).getD ""}"⟩
     for m in s.merges do
       unless decide m.Valid do out := out.push ⟨"merges_valid", s!"{place}!{m.toA1}", "corners out of order, or outside the sheet"⟩
+    for t in s.tables do
+      let at_ := s!"{place} table {t.name}"
+      if !t.shapeOk then out := out.push ⟨"tables_shape", at_, s!"range {t.range.toA1} with {t.columns.length} column names: out of order, the wrong count, an empty name, or a name twice"⟩
+      if !t.headerOk wb.sst s then out := out.push ⟨"tables_header", at_, "a header cell does not show its column's name"⟩
+      for m in s.merges do
+        if t.range.overlaps m then out := out.push ⟨"tables_unmerged", at_, s!"overlaps the merge {m.toA1}"⟩
+    let trs := s.tables.map (·.range)
+    for (i, a) in (List.range trs.length).zip trs do
+      for b in trs.drop (i + 1) do
+        if a.overlaps b then out := out.push ⟨"tables_disjoint", s!"{place}!{a.toA1}", s!"overlaps the table at {b.toA1}"⟩
     for m in s.merges do
       for r in s.rows do
         for c in r.cells do

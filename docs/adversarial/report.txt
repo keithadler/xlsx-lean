@@ -47,6 +47,11 @@ W23-name-with-space          FAIL   ok        ok        ok        ok
 W24-names-case-clash         FAIL   ok        ok        ok        ok       
 W25-name-bad-scope           FAIL   ok        DIFFERS   ok        ok       
                                     openpyxl: defined names [] != ['Local']
+W26-table-header             FAIL   ok        ok        ok        ok       
+W27-tables-overlap           FAIL   ok        ok        ok        ok       
+W28-table-over-merge         FAIL   ok        ok        ok        ok       
+W29-table-name-clash         FAIL   ok        ok        ok        ok       
+W30-table-columns-twice      FAIL   ok        ok        ok        ok       
 
 == gap ==
 case                         ours   expat     openpyxl  calamine  sheetjs  
@@ -90,6 +95,7 @@ G25-dates-1904               pass   ok        DIFFERS   DIFFERS   DIFFERS
                                     sheetjs: Probe!A1: read '1899-12-30', model '1904-01-01'
 G26-one-hidden               pass   ok        ok        ok        ok       
 G27-names                    pass   ok        ok        ok        ok       
+G28-table                    pass   ok        ok        ok        ok       
 G22-decimals                 pass   ok        ok        DIFFERS   ok       
                                     calamine: Probe!D1: read None, model '#N/A'
 G23-formula-cached           pass   ok        ok        ok        ok       

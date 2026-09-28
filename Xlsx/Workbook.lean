@@ -78,6 +78,17 @@ inductive SheetState where
   | visible | hidden | veryHidden
   deriving DecidableEq, Repr
 
+/-- A table (a ListObject): `xl/tables/tableN.xml`, reached from its sheet by
+`<tablePart r:id>`. -/
+structure Table where
+  /-- `displayName`, the name formulas use. -/
+  name : String
+  range : Range
+  /-- `headerRowCount` is not 0: the first row of the range holds the column names. -/
+  header : Bool := true
+  columns : List String
+  deriving DecidableEq, Repr
+
 structure Sheet where
   name : String
   rows : List Row
@@ -86,6 +97,7 @@ structure Sheet where
   /-- `<mergeCell ref="A6:C6"/>`: merged rectangles. -/
   merges : List Range := []
   state : SheetState := .visible
+  tables : List Table := []
   deriving DecidableEq, Repr
 
 /-- `<definedName name="Total" localSheetId="0">Sheet1!$A$1:$A$9</definedName>` -/
@@ -213,6 +225,29 @@ def forbiddenInSheetName : List Char := ['[', ']', ':', '*', '?', '/', '\\']
 /-- Sheet names are compared ignoring case: `Sheet1` and `SHEET1` clash. -/
 def Sheet.key (s : Sheet) : List Char := s.name.toList.map Char.toLower
 
+/-- The text a sheet shows at a reference, looking shared strings up. -/
+def Sheet.textAt (sst : List String) (s : Sheet) (ref : CellRef) : Option String :=
+  match s.rows.find? (·.index == ref.row) with
+  | none => none
+  | some row => match row.cells.find? (·.ref == ref) with
+    | none => none
+    | some c => match c.stored.resolve sst with
+      | some (.text t) => some t
+      | _ => none
+
+/-- A table is shaped right: its range is valid, it has one column name per column,
+the names are not empty and not repeated ignoring case (**ECMA-376**, **Excel**). -/
+def Table.shapeOk (t : Table) : Bool :=
+  decide t.range.Valid
+  && t.columns.length == t.range.last.col + 1 - t.range.first.col
+  && t.columns.all (!·.isEmpty)
+  && Package.noDups (t.columns.map fun c => c.toList.map Char.toLower)
+
+/-- Each header cell shows its column's name (**Excel**: it repairs a mismatch). -/
+def Table.headerOk (sst : List String) (s : Sheet) (t : Table) : Bool :=
+  !t.header || (List.range t.columns.length).all fun i =>
+    s.textAt sst ⟨t.range.first.col + i, t.range.first.row⟩ == t.columns[i]?
+
 /-- A cell obeys the rules of the row it is in. -/
 structure Cell.WellFormed (wb : Workbook) (row : Row) (c : Cell) : Prop where
   in_row : c.ref.row = row.index
@@ -262,6 +297,14 @@ structure Sheet.WellFormed (wb : Workbook) (s : Sheet) : Prop where
   Excel hides the others and openpyxl discards them, so readers would disagree (**Excel**). -/
   merged_hidden_empty : ∀ m ∈ s.merges, ∀ r ∈ s.rows, ∀ c ∈ r.cells,
     m.contains c.ref = true → c.ref ≠ m.first → c.stored = .empty
+  /-- Every table is shaped right (**ECMA-376**, **Excel**). -/
+  tables_shape : ∀ t ∈ s.tables, t.shapeOk = true
+  /-- Tables do not overlap each other (**Excel**). -/
+  tables_disjoint : (s.tables.map (·.range)).Pairwise (fun a b => a.overlaps b = false)
+  /-- A table does not overlap a merged range (**Excel**). -/
+  tables_unmerged : ∀ t ∈ s.tables, ∀ m ∈ s.merges, t.range.overlaps m = false
+  /-- Header cells show the column names (**Excel**). -/
+  tables_header : ∀ t ∈ s.tables, t.headerOk wb.sst s = true
 
 structure Workbook.WellFormed (wb : Workbook) : Prop where
   has_sheet : wb.sheets ≠ []
@@ -273,6 +316,11 @@ structure Workbook.WellFormed (wb : Workbook) : Prop where
   /-- At least one sheet is visible: Excel repairs a workbook whose sheets are all
   hidden (**Excel**). -/
   one_visible : ∃ s ∈ wb.sheets, s.state = .visible
+  /-- Table names are names Excel accepts, unique across the workbook ignoring case, and
+  not the name of a defined name (**Excel**). -/
+  tables_named : ∀ s ∈ wb.sheets, ∀ t ∈ s.tables, validName t.name = true
+  tables_unique : ((wb.sheets.flatMap (·.tables)).map (·.name.toList.map Char.toLower)
+    ++ (wb.names.filter (·.scope.isNone)).map (·.name.toList.map Char.toLower)).Nodup
   /-- Every defined name is one Excel accepts (**Excel**). -/
   names_valid : ∀ d ∈ wb.names, validName d.name = true
   /-- No two defined names in one scope differ only by case (**Excel**). -/
@@ -429,12 +477,19 @@ def Sheet.check (wb : Workbook) (s : Sheet) : Bool :=
   && s.merges.all (fun m => decide m.Valid) && disjointB s.merges
   && s.merges.all (fun m => s.rows.all fun r => r.cells.all fun c =>
       !m.contains c.ref || c.ref == m.first || c.stored == .empty)
+  && s.tables.all Table.shapeOk
+  && disjointB (s.tables.map (·.range))
+  && s.tables.all (fun t => s.merges.all fun m => !t.range.overlaps m)
+  && s.tables.all (Table.headerOk wb.sst s)
 
 def Workbook.check (wb : Workbook) : Bool :=
   !wb.sheets.isEmpty && wb.sheets.all (Sheet.check wb)
   && Package.noDups (wb.sheets.map Sheet.key) && 0 < wb.styleCount
   && wb.sst.all textOk
   && wb.sheets.any (·.state == .visible)
+  && wb.sheets.all (fun s => s.tables.all fun t => validName t.name)
+  && Package.noDups ((wb.sheets.flatMap (·.tables)).map (·.name.toList.map Char.toLower)
+      ++ (wb.names.filter (·.scope.isNone)).map (·.name.toList.map Char.toLower))
   && wb.names.all (fun d => validName d.name)
   && Package.noDups (wb.names.map DefinedName.key)
   && wb.names.all (fun d => match d.scope with | some i => i < wb.sheets.length | none => true)
@@ -477,7 +532,7 @@ theorem Row.check_sound {wb row} (h : Row.check wb row = true) : row.WellFormed 
 theorem Sheet.check_sound {wb s} (h : Sheet.check wb s = true) : s.WellFormed wb := by
   simp only [Sheet.check, Bool.and_eq_true, decide_eq_true_eq, List.all_eq_true,
     List.isEmpty_eq_false_iff, Bool.not_eq_eq_eq_not, Bool.not_true, bne_iff_ne, ne_eq] at h
-  obtain ⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨h1, h2⟩, h3⟩, hq1⟩, hq2⟩, hh⟩, h4⟩, h5⟩, hd⟩, hm⟩, hmd⟩, hme⟩ := h
+  obtain ⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨h1, h2⟩, h3⟩, hq1⟩, hq2⟩, hh⟩, h4⟩, h5⟩, hd⟩, hm⟩, hmd⟩, hme⟩, ht1⟩, ht2⟩, ht3⟩, ht4⟩ := h
   exact {
     name_nonempty := h1
     name_short := h2
@@ -501,16 +556,20 @@ theorem Sheet.check_sound {wb s} (h : Sheet.check wb s = true) : s.WellFormed wb
       simp only [hin, Bool.not_true, Bool.false_or, Bool.or_eq_true, beq_iff_eq] at this
       rcases this with h | h
       · exact absurd h hne
-      · exact h }
+      · exact h
+    tables_shape := ht1
+    tables_disjoint := disjointB_sound ht2
+    tables_unmerged := fun t ht m hm => by simpa using ht3 t ht m hm
+    tables_header := ht4 }
 
 /-- **The checker is sound**: a workbook it accepts follows every rule. -/
 theorem Workbook.check_sound {wb : Workbook} (h : wb.check = true) : wb.WellFormed := by
   simp only [Workbook.check, Bool.and_eq_true, decide_eq_true_eq, List.all_eq_true,
     Bool.not_eq_true', List.isEmpty_eq_false_iff] at h
-  obtain ⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨h1, h2⟩, h3⟩, h4⟩, h5⟩, hv⟩, hn1⟩, hn2⟩, hn3⟩, hn4⟩, h6⟩, h7⟩, h8⟩ := h
+  obtain ⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨h1, h2⟩, h3⟩, h4⟩, h5⟩, hv⟩, htn⟩, htu⟩, hn1⟩, hn2⟩, hn3⟩, hn4⟩, h6⟩, h7⟩, h8⟩ := h
   refine ⟨h1, fun s hs => Sheet.check_sound (h2 s hs), Package.noDups_sound h3, h4, h5,
-    by simpa [List.any_eq_true] using hv, hn1, Package.noDups_sound hn2, ?_, hn4,
-    Package.noDups_sound h6, ?_, ?_⟩
+    by simpa [List.any_eq_true] using hv, fun s hs t ht => htn s hs t ht, Package.noDups_sound htu,
+    hn1, Package.noDups_sound hn2, ?_, hn4, Package.noDups_sound h6, ?_, ?_⟩
   · intro d hd i hi
     have := hn3 d hd
     rw [hi] at this

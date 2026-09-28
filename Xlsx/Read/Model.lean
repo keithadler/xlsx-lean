@@ -156,7 +156,7 @@ def richText (n : Node) : String :=
 
 def worksheetKnown : List String :=
   ["sheetPr", "dimension", "sheetViews", "sheetFormatPr", "cols", "sheetData", "pageMargins",
-   "pageSetup", "headerFooter", "printOptions", "sheetCalcPr", "extLst", "mergeCells"]
+   "pageSetup", "headerFooter", "printOptions", "sheetCalcPr", "extLst", "mergeCells", "tableParts"]
 
 def parsePart (notes : Array Note) (name : String) (data : ByteArray) : Option Node × Array Note :=
   match parse data with
@@ -336,11 +336,34 @@ def load (entries : Array ZipEntry) : Loaded := Id.run do
                   notes := n
                   let state : SheetState := match s.attr? "state" with
                     | some "hidden" => .hidden | some "veryHidden" => .veryHidden | _ => .visible
-                  sheets := sheets ++ [{ sheet with state }]
+                  -- tables: <tablePart r:id> through the sheet's own relationships
+                  let mut tables : List Table := []
+                  let sheetRels := pkg.relsOf (.part target)
+                  for tp in ((root.child? "tableParts").map (·.childrenNamed "tablePart")).getD #[] do
+                    let tid := (tp.attr? "id").getD ""
+                    match sheetRels.find? (·.id == tid) with
+                    | none => notes := notes.push ⟨.error, target.entryName, s!"tablePart {tid} names no relationship"⟩
+                    | some tr =>
+                      match data (tr.resolve target.dir) with
+                      | none => pure ()
+                      | some tb =>
+                        let (troot, n) := parsePart notes (tr.resolve target.dir).entryName tb
+                        notes := n
+                        if let some troot := troot then
+                          match (troot.attr? "ref").bind parseRange with
+                          | none => notes := notes.push ⟨.error, (tr.resolve target.dir).entryName, "the table's ref is not a range"⟩
+                          | some range =>
+                            let tname := (troot.attr? "displayName").getD ((troot.attr? "name").getD "")
+                            let header := troot.attr? "headerRowCount" != some "0"
+                            let cols := (((troot.child? "tableColumns").map (·.childrenNamed "tableColumn")).getD #[]).toList.map
+                              fun c => (c.attr? "name").getD ""
+                            tables := tables ++ [Table.mk tname range header cols]
+                  sheets := sheets ++ [{ sheet with state, tables }]
                   sheetEntries := sheetEntries.push (sname, target.entryName)
   | [] => notes := notes.push ⟨.error, "_rels/.rels", "no officeDocument relationship"⟩
   | _ => notes := notes.push ⟨.error, "_rels/.rels", "more than one officeDocument relationship"⟩
-  let modeled := [workbookType, worksheetType, stylesType, sstType, relsType]
+  let modeled := [workbookType, worksheetType, stylesType, sstType, relsType,
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.table+xml"]
   let others := pkg.parts.filter fun p => !(modeled.contains ((pkg.contentType p).getD ""))
   unless others.isEmpty do
     notes := notes.push ⟨.unmodeled, "package", s!"{others.length} parts outside the model: " ++

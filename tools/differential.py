@@ -89,6 +89,7 @@ def read_expat(path):
     return None
 
 NAMES = {}  # path -> defined names a reader saw, for the names comparison
+TABLES = {}  # path -> table names per sheet
 
 def read_openpyxl(path):
     import openpyxl
@@ -99,6 +100,7 @@ def read_openpyxl(path):
         if getattr(ws, "print_area", None):  # openpyxl keeps print areas here, by design
             names.append("_xlnm.Print_Area")
     NAMES[("openpyxl", path)] = names
+    TABLES[("openpyxl", path)] = [sorted(ws.tables.keys()) for ws in wb.worksheets]
     out = []
     for ws in wb.worksheets:
         cells = {}
@@ -189,6 +191,10 @@ def main():
                 got = NAMES.get((r, path))
                 if want and got is not None and sorted(got) != want:
                     d = d + [f"defined names {sorted(got)} != {want}"]
+                wantt = [sorted(sh.get("tables", [])) for sh in case["sheets"]]
+                gott = TABLES.get((r, path))
+                if any(wantt) and gott is not None and gott != wantt:
+                    d = d + [f"tables {gott} != {wantt}"]
                 row[r] = {"status": "differs", "diffs": d[:5], "count": len(d)} if d else {"status": "ok"}
             except KeyboardInterrupt:
                 raise
