@@ -2,7 +2,7 @@
 == broken ==
 case                         ours   expat     openpyxl  calamine  sheetjs  
 W01-sst-dangling             FAIL   ok        REJECTS   CRASHES   REJECTS  
-                                    calamine: PanicException: index out of bounds: the len is 14 but the index is 99
+                                    calamine: PanicException: index out of bounds: the len is 15 but the index is 99
 W02-cells-unsorted           FAIL   ok        ok        ok        ok       
 W03-row-twice                FAIL   ok        ok        ok        ok       
 W04-cell-wrong-row           FAIL   ok        ok        ok        ok       
@@ -35,6 +35,12 @@ P09-names-differ-by-case     FAIL   ok        ok        ok        ok
 P08-sheet-typed-styles       FAIL   ok        ok        ok        ok       
 W17-value-under-merge        FAIL   ok        DIFFERS   ok        ok       
                                     openpyxl: Limits!B1: read None, model 'Value'
+W18-numfmt-undeclared        FAIL   ok        ok        ok        ok       
+W19-date-out-of-range        FAIL   ok        DIFFERS   CRASHES   DIFFERS  
+                                    openpyxl: Probe!A1: read '#VALUE!', model '10113-09-19'
+                                    calamine: PanicException: called `Result::unwrap()` on an `Err` value: PyErr { type: <class 'ValueError'>, value: ValueE
+                                    sheetjs: Probe!A1: read '10113-09-19', model '10113-09-19'
+W20-numfmt-twice             FAIL   ok        ok        ok        ok       
 
 == gap ==
 case                         ours   expat     openpyxl  calamine  sheetjs  
@@ -68,6 +74,14 @@ G19-formula-looking          pass   ok        ok        ok        ok
 G20-empty-string             pass   ok        ok        DIFFERS   ok       
                                     calamine: Probe!A1: read None, model ''
 G21-merges-and-dimension     pass   ok        ok        ok        ok       
+G24-dates-1900               pass   ok        DIFFERS   DIFFERS   DIFFERS  
+                                    openpyxl: Probe!A1: read datetime.time(0, 0), model '1900-01-00'
+                                    calamine: Probe!A1: read datetime.time(0, 0), model '1900-01-00'
+                                    sheetjs: Probe!A1: read '1899-12-30', model '1900-01-00'
+G25-dates-1904               pass   ok        DIFFERS   DIFFERS   DIFFERS  
+                                    openpyxl: Probe!A1: read datetime.time(0, 0), model '1904-01-01'
+                                    calamine: Probe!A1: read datetime.time(0, 0), model '1904-01-01'
+                                    sheetjs: Probe!A1: read '1899-12-30', model '1904-01-01'
 G22-decimals                 pass   ok        ok        DIFFERS   ok       
                                     calamine: Probe!D1: read None, model '#N/A'
 G23-formula-cached           pass   ok        ok        ok        ok       

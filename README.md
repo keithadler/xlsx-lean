@@ -77,7 +77,11 @@ A rule is only as good as its source, so every rule in the spec says where it co
 - **XML:** text and formulas may only contain characters XML 1.0 can carry. U+0001 or U+FFFE cannot appear in an XML file at all, escaped or not. Decimals must be finite doubles (`xsd:double`).
 - **Excel's published limits,** which a file meant for Excel has to respect even where the standard is silent: 16,384 columns and 1,048,576 rows, at most 32,767 characters in a cell, and 15 significant digits in an integer. Sheet names must be unique without regard to case, 1 to 31 UTF-16 units long, contain none of `[ ] : * ? / \`, not start or end with an apostrophe, and not be `History`.
 
-Cells can hold integers, decimals (kept exactly as written, `m × 10^e`), text (shared or inline), booleans, error values, or nothing but a format, and each can carry a formula.
+Cells can hold integers, decimals (kept exactly as written, `m × 10^e`), text (shared or inline), booleans, error values, or nothing but a format, and each can carry a formula. Sheets carry their merged ranges and the used range they claim (`<dimension>`); the workbook carries its number formats and its date system.
+
+**More rules:** the claimed used range holds every cell; merged ranges are valid, never overlap (Excel repairs overlaps), and only a merge's top-left cell holds a value (Excel hides the rest, and openpyxl discards them); every style's number format exists (ids below 164 are built in, the rest must be declared); a number shown as a date is one Excel can show, from serial 0 to 9999-12-31. `Sheet.WellFormed.merge_unique` proves every cell is in at most one merged range.
+
+**Dates** are numbers in a date format, nothing more. `xlsxlean` reads them as Excel shows them, including its two odd days in the 1900 system: serial 0 is 1900-01-00 and serial 60 is 1900-02-29, which Excel inherited from Lotus 1-2-3. The readers disagree about exactly those days (below).
 
 ## The adversarial test
 
@@ -96,6 +100,12 @@ Cells can hold integers, decimals (kept exactly as written, `m × 10^e`), text (
 | cell A1 written twice, with 1 then 2 | **all three readers silently keep the second value** |
 | two sheets named `Limits` and `LIMITS` | **openpyxl renames one to `LIMITS1`** |
 | a sheet with an empty name | openpyxl renames it `Sheet` |
+| a value under a merged range, not in its top-left cell | **openpyxl silently discards it**; calamine and SheetJS keep it |
+| an error value such as `#N/A` | calamine reads it as an empty cell |
+| a date format on serial 3,000,000 (past 9999-12-31) | **calamine crashes** (a panic in date conversion); openpyxl returns `#VALUE!`; SheetJS the year 10113 |
+| serial 60, which Excel shows as 1900-02-29 | openpyxl and calamine read 1900-02-28, **the same date as serial 59** |
+| serials 1 to 59 | SheetJS reads each one day early (1 is 1899-12-31) |
+| a `date1904` workbook | SheetJS 0.18.5 ignores it: serial 45000 reads as 2023-03-15, not 2027-03-16 |
 | the integer 2^53 + 1 | calamine and SheetJS read 2^53; 10^400 becomes `inf` or nothing |
 | an empty shared string | calamine reads it as an empty cell, in 170 of the 300 random workbooks too |
 

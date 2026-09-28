@@ -65,7 +65,8 @@ def mainNs : String := "http://schemas.openxmlformats.org/spreadsheetml/2006/mai
 def relNs : String := "http://schemas.openxmlformats.org/officeDocument/2006/relationships"
 
 def Workbook.workbookXml (wb : Workbook) : String :=
-  xmlHeader ++ s!"<workbook xmlns=\"{mainNs}\" xmlns:r=\"{relNs}\"><sheets>"
+  xmlHeader ++ s!"<workbook xmlns=\"{mainNs}\" xmlns:r=\"{relNs}\">"
+  ++ (if wb.date1904 then "<workbookPr date1904=\"1\"/>" else "") ++ "<sheets>"
   ++ String.join ((sheetNums wb.sheets.length).zip wb.sheets |>.map fun (i, s) =>
       s!"<sheet name=\"{attrEscape s.name}\" sheetId=\"{numeral i}\" r:id=\"{rid i}\"/>")
   ++ "</sheets></workbook>"
@@ -103,19 +104,27 @@ def Workbook.sstXml (wb : Workbook) : String :=
   ++ String.join (wb.sst.map fun t => s!"<si><t xml:space=\"preserve\">{xmlEscape t}</t></si>")
   ++ "</sst>"
 
-/-- `cellXfs` with exactly `wb.styleCount` formats: `0` is the default, the rest bold. -/
-def stylesXml (n : Nat) : String :=
-  let n := max n 1
+/-- `styles.xml`: the custom number formats, and `cellXfs` with exactly
+`wb.styleCount` formats, each with its `numFmtId`; style 0 uses the plain font and the
+rest bold. -/
+def stylesXml (wb : Workbook) : String :=
+  let n := max wb.styleCount 1
+  let fmt (i : Nat) := wb.formatOf i
   xmlHeader ++ s!"<styleSheet xmlns=\"{mainNs}\">"
+  ++ (if wb.numFmts.isEmpty then "" else
+      s!"<numFmts count=\"{wb.numFmts.length}\">" ++ String.join (wb.numFmts.map fun (id, code) =>
+        s!"<numFmt numFmtId=\"{id}\" formatCode=\"{attrEscape code}\"/>") ++ "</numFmts>")
   ++ "<fonts count=\"2\"><font><sz val=\"11\"/><name val=\"Calibri\"/></font>"
   ++ "<font><b/><sz val=\"11\"/><name val=\"Calibri\"/></font></fonts>"
   ++ "<fills count=\"2\"><fill><patternFill patternType=\"none\"/></fill>"
   ++ "<fill><patternFill patternType=\"gray125\"/></fill></fills>"
   ++ "<borders count=\"1\"><border><left/><right/><top/><bottom/><diagonal/></border></borders>"
   ++ "<cellStyleXfs count=\"1\"><xf numFmtId=\"0\" fontId=\"0\" fillId=\"0\" borderId=\"0\"/></cellStyleXfs>"
-  ++ s!"<cellXfs count=\"{n}\"><xf numFmtId=\"0\" fontId=\"0\" fillId=\"0\" borderId=\"0\" xfId=\"0\"/>"
-  ++ String.join ((List.range (n - 1)).map fun _ =>
-      "<xf numFmtId=\"0\" fontId=\"1\" fillId=\"0\" borderId=\"0\" xfId=\"0\" applyFont=\"1\"/>")
+  ++ s!"<cellXfs count=\"{n}\">"
+  ++ String.join ((List.range n).map fun i =>
+      let font := if i == 0 then "0" else "1"
+      let apply := (if i == 0 then "" else " applyFont=\"1\"") ++ (if fmt i == 0 then "" else " applyNumberFormat=\"1\"")
+      s!"<xf numFmtId=\"{fmt i}\" fontId=\"{font}\" fillId=\"0\" borderId=\"0\" xfId=\"0\"{apply}/>")
   ++ "</cellXfs><cellStyles count=\"1\"><cellStyle name=\"Normal\" xfId=\"0\" builtinId=\"0\"/></cellStyles>"
   ++ "</styleSheet>"
 
@@ -123,7 +132,7 @@ def stylesXml (n : Nat) : String :=
 content for (possible in a hand-built package) gets an empty element. -/
 def partContent (wb : Workbook) (n : PartName) : String :=
   if n = workbookPart then wb.workbookXml
-  else if n = stylesPart then stylesXml wb.styleCount
+  else if n = stylesPart then stylesXml wb
   else if n = sstPart then wb.sstXml
   else match ((sheetNums wb.sheets.length).zip wb.sheets).find? (fun (i, _) => sheetPart i = n) with
     | some (_, s) => s.xml

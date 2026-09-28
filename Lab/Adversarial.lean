@@ -149,6 +149,21 @@ def probes : List Case :=
         merges := s.merges ++ [Range.mk ⟨1, 7⟩ ⟨3, 7⟩, Range.mk ⟨4, 1⟩ ⟨4, 3⟩] })
   , c "W17-value-under-merge" "broken" "B1 holds a value under the merge A1:B1"
       (withLimits fun s => { s with merges := [Range.mk ⟨1, 1⟩ ⟨2, 1⟩] })
+  , c "W18-numfmt-undeclared" "broken" "a style with numFmtId 200, never declared"
+      { base with styleCount := 2, xfFormats := [0, 200] }
+  , c "W19-date-out-of-range" "broken" "a date format on 3000000 (past 9999-12-31) and on -1"
+      { (oneCellRow [⟨⟨1, 1⟩, .number 3000000, 1, none⟩, ⟨⟨2, 1⟩, .number (-1), 1, none⟩]) with
+          styleCount := 2, xfFormats := [0, 14] }
+  , c "W20-numfmt-twice" "broken" "numFmtId 164 declared twice"
+      { base with numFmts := [(164, "yyyy"), (164, "mm")] }
+  , c "G24-dates-1900" "probe" "serials 0, 1, 59, 60, 61, 45000 in 1900 dates, a time, a custom format"
+      { (oneCellRow [⟨⟨1, 1⟩, .number 0, 1, none⟩, ⟨⟨2, 1⟩, .number 1, 1, none⟩, ⟨⟨3, 1⟩, .number 59, 1, none⟩,
+          ⟨⟨4, 1⟩, .number 60, 1, none⟩, ⟨⟨5, 1⟩, .number 61, 1, none⟩, ⟨⟨6, 1⟩, .number 45000, 2, none⟩,
+          ⟨⟨7, 1⟩, .real 450005 (-1), 3, none⟩, ⟨⟨8, 1⟩, .number 2958465, 2, none⟩]) with
+          styleCount := 4, numFmts := [(164, "yyyy-mm-dd")], xfFormats := [0, 14, 164, 22] }
+  , c "G25-dates-1904" "probe" "serials 0, 1, 45000 in the 1904 date system"
+      { (oneCellRow [⟨⟨1, 1⟩, .number 0, 1, none⟩, ⟨⟨2, 1⟩, .number 1, 1, none⟩, ⟨⟨3, 1⟩, .number 45000, 1, none⟩]) with
+          styleCount := 2, xfFormats := [0, 14], date1904 := true }
   , c "G22-decimals" "probe" "decimals 3.25, 1E-3, -6.02E23, and an error value"
       (oneCellRow [⟨⟨1, 1⟩, .real 325 (-2), 0, none⟩, ⟨⟨2, 1⟩, .real 1 (-3), 0, none⟩,
         ⟨⟨3, 1⟩, .real (-602) 21, 0, none⟩, ⟨⟨4, 1⟩, .error "#N/A", 0, none⟩])
@@ -234,6 +249,7 @@ def Case.manifest (c : Case) : Json :=
     ("workbook_check", toJson c.wb.check),
     ("sheets", Json.arr (c.wb.sheets.map fun s => Json.mkObj [("name", s.name),
       ("cells", Json.arr (s.rows.flatMap fun r => r.cells.map fun cell =>
-        Json.mkObj [("ref", cell.ref.toA1), ("value", valueJson (cell.stored.resolve c.wb.sst))]).toArray)]).toArray)]
+        Json.mkObj [("ref", cell.ref.toA1), ("value",
+          Read.withDate c.wb cell (valueJson (cell.stored.resolve c.wb.sst)))]).toArray)]).toArray)]
 
 end Lab

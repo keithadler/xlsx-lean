@@ -280,6 +280,9 @@ def load (entries : Array ZipEntry) : Loaded := Id.run do
   let mut sheetEntries : Array (String × String) := #[]
   let mut sst : List String := []
   let mut styleCount := 1
+  let mut numFmts : List (Nat × String) := []
+  let mut xfFormats : List Nat := []
+  let mut date1904 := false
   match pkg.mainDocument with
   | [main] =>
     let mainRels := pkg.relsOf (.part main)
@@ -295,12 +298,19 @@ def load (entries : Array ZipEntry) : Loaded := Id.run do
         notes := n
         if let some root := root then
           styleCount := ((root.child? "cellXfs").map (·.childrenNamed "xf" |>.size)).getD 1
+          numFmts := (((root.child? "numFmts").map (·.childrenNamed "numFmt")).getD #[]).toList.map fun f =>
+            (((f.attr? "numFmtId").bind String.toNat?).getD 0, (f.attr? "formatCode").getD "")
+          xfFormats := (((root.child? "cellXfs").map (·.childrenNamed "xf")).getD #[]).toList.map fun x =>
+            ((x.attr? "numFmtId").bind String.toNat?).getD 0
+          if xfFormats.all (· == 0) then xfFormats := []
     match data main with
     | none => notes := notes.push ⟨.error, main.render, "the main document is not in the archive"⟩
     | some d =>
       let (root, n) := parsePart notes main.entryName d
       notes := n
       if let some root := root then
+        if let some pr := root.child? "workbookPr" then
+          date1904 := pr.attr? "date1904" == some "1" || pr.attr? "date1904" == some "true"
         for s in ((root.child? "sheets").map (·.childrenNamed "sheet")).getD #[] do
           let sname := (s.attr? "name").getD ""
           let rid := (s.attr? "id").getD ""
@@ -328,7 +338,8 @@ def load (entries : Array ZipEntry) : Loaded := Id.run do
   unless others.isEmpty do
     notes := notes.push ⟨.unmodeled, "package", s!"{others.length} parts outside the model: " ++
       ", ".intercalate (others.take 8 |>.map (·.entryName)) ++ (if others.length > 8 then ", …" else "")⟩
-  return { pkg, wb := { sheets, sst, styleCount }, sheetEntries, notes, entries := entries.size }
+  let wb : Workbook := { sheets, sst, styleCount, numFmts, xfFormats, date1904 }
+  return { pkg := pkg, wb := wb, sheetEntries := sheetEntries, notes := notes, entries := entries.size }
 
 def loadFile (path : System.FilePath) : IO (Except String Loaded) := do
   let bytes ← IO.FS.readBinFile path

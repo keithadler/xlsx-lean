@@ -19,8 +19,24 @@ def col_row(ref):
         col = col * 26 + (ord(ch) - 64)
     return col, int(ref[i:])
 
+def iso(v):
+    """A reader's date or datetime as ISO text, or None if it is not one."""
+    import datetime
+    if isinstance(v, datetime.datetime):
+        return v.strftime("%Y-%m-%d") if (v.hour, v.minute, v.second) == (0, 0, 0) else v.strftime("%Y-%m-%dT%H:%M:%S")
+    if isinstance(v, datetime.date):
+        return v.strftime("%Y-%m-%d")
+    if isinstance(v, datetime.time):
+        return None
+    if isinstance(v, str) and len(v) >= 10 and v[4] == "-" and v[7] == "-":
+        return v[:19].rstrip("Z").replace(".000", "")
+    return None
+
 def same(expected, got):
     """Does a reader's value match the model's?"""
+    if "date" in expected:
+        d = iso(got)
+        return d is not None and (d == expected["date"] or d == expected["date"] + "T00:00:00")
     t = expected["t"]
     if t == "missing" or t == "empty":
         return got is None or got == ""
@@ -59,7 +75,7 @@ def compare(case, sheets):
         for c in s["cells"]:
             g = got.get(c["ref"])
             if not same(c["value"], g):
-                v = c["value"].get("v", c["value"].get("m"))
+                v = c["value"].get("date", c["value"].get("v", c["value"].get("m")))
                 diffs.append(f"{s['name']}!{c['ref']}: read {g!r:.60}, model {v!r:.60}")
     return diffs
 

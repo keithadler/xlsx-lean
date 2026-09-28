@@ -1,4 +1,5 @@
 import Xlsx.Package
+import Xlsx.Dates
 
 /-!
 # The workbook: SpreadsheetML
@@ -85,7 +86,30 @@ structure Workbook where
   sst : List String
   /-- How many entries `cellXfs` has. -/
   styleCount : Nat := 1
+  /-- Custom number formats, `<numFmt numFmtId="164" formatCode="yyyy-mm-dd"/>`. -/
+  numFmts : List (Nat × String) := []
+  /-- The `numFmtId` of each `cellXfs` entry, in order; empty means all General (0). -/
+  xfFormats : List Nat := []
+  /-- `<workbookPr date1904="1"/>`: serial 0 is 1904-01-01. -/
+  date1904 : Bool := false
   deriving DecidableEq, Repr
+
+/-- The number format a style uses. -/
+def Workbook.formatOf (wb : Workbook) (style : Nat) : Nat := wb.xfFormats.getD style 0
+
+/-- Does this style show numbers as dates? -/
+def Workbook.isDateStyle (wb : Workbook) (style : Nat) : Bool :=
+  let id := wb.formatOf style
+  Dates.builtinDate id || ((wb.numFmts.lookup id).map Dates.customDate).getD false
+
+/-- A value shown as a date is a date Excel can show: from serial 0 to 9999-12-31
+(**Excel**). Only numbers are affected; text in a date-formatted cell is just text. -/
+def Stored.dateOk (date1904 : Bool) : Stored → Bool
+  | .number n => 0 ≤ n && n ≤ Dates.maxSerial date1904
+  | .real m e => match Dates.split m e with
+    | some (days, _) => days ≤ Dates.maxSerial date1904
+    | none => false
+  | _ => true
 
 /-! ## The rules -/
 
@@ -153,6 +177,8 @@ structure Cell.WellFormed (wb : Workbook) (row : Row) (c : Cell) : Prop where
   error_ok : ∀ code, c.stored = .error code → code ∈ errorCodes
   /-- A formula is writable text (**XML**, **Excel**). -/
   formula_ok : ∀ f, c.formula = some f → textOk f = true
+  /-- A number in a date format is a date Excel can show (**Excel**). -/
+  date_ok : wb.isDateStyle c.style = true → c.stored.dateOk wb.date1904 = true
 
 structure Row.WellFormed (wb : Workbook) (row : Row) : Prop where
   index_pos : 0 < row.index
@@ -191,6 +217,13 @@ structure Workbook.WellFormed (wb : Workbook) : Prop where
   has_style : 0 < wb.styleCount
   /-- Every shared string is writable (**XML**, **Excel**). -/
   sst_ok : ∀ t ∈ wb.sst, textOk t = true
+  /-- Custom number format ids are unique (**ECMA-376**). -/
+  numfmt_ids_unique : (wb.numFmts.map (·.1)).Nodup
+  /-- `numFmtId` is given for every style, or for none (**ECMA-376**). -/
+  xf_formats : wb.xfFormats = [] ∨ wb.xfFormats.length = wb.styleCount
+  /-- A style's number format exists: ids below 164 are built in, the rest must be
+  declared in `numFmts` (**ECMA-376**, **Excel**). -/
+  numfmt_ref : ∀ id ∈ wb.xfFormats, id < 164 ∨ id ∈ wb.numFmts.map (·.1)
 
 /-! ## What the rules buy -/
 
@@ -302,6 +335,7 @@ def Cell.check (wb : Workbook) (row : Row) (c : Cell) : Bool :=
       | .bool _ | .empty => true)
   && c.style < wb.styleCount
   && (match c.formula with | some f => textOk f | none => true)
+  && (!wb.isDateStyle c.style || c.stored.dateOk wb.date1904)
 
 def Row.check (wb : Workbook) (row : Row) : Bool :=
   0 < row.index && row.index ≤ maxRow && row.cells.all (Cell.check wb row)
@@ -336,11 +370,14 @@ def Workbook.check (wb : Workbook) : Bool :=
   !wb.sheets.isEmpty && wb.sheets.all (Sheet.check wb)
   && Package.noDups (wb.sheets.map Sheet.key) && 0 < wb.styleCount
   && wb.sst.all textOk
+  && Package.noDups (wb.numFmts.map (·.1))
+  && (wb.xfFormats.isEmpty || wb.xfFormats.length == wb.styleCount)
+  && wb.xfFormats.all (fun id => id < 164 || (wb.numFmts.map (·.1)).contains id)
 
 theorem Cell.check_sound {wb row c} (h : Cell.check wb row c = true) : c.WellFormed wb row := by
   simp only [Cell.check, Bool.and_eq_true, beq_iff_eq, decide_eq_true_eq] at h
-  obtain ⟨⟨⟨⟨⟨h1, h2⟩, h3⟩, h4⟩, h5⟩, h6⟩ := h
-  refine ⟨h1, h2, h3, ?_, h5, ?_, ?_, ?_, ?_, ?_⟩
+  obtain ⟨⟨⟨⟨⟨⟨h1, h2⟩, h3⟩, h4⟩, h5⟩, h6⟩, h7⟩ := h
+  refine ⟨h1, h2, h3, ?_, h5, ?_, ?_, ?_, ?_, ?_, ?_⟩
   · intro i hi
     rw [hi] at h4
     simpa using h4
@@ -359,6 +396,9 @@ theorem Cell.check_sound {wb row c} (h : Cell.check wb row c = true) : c.WellFor
   · intro f hf
     rw [hf] at h6
     simpa using h6
+  · intro hd
+    simp only [hd, Bool.not_true, Bool.false_or] at h7
+    exact h7
 
 theorem Row.check_sound {wb row} (h : Row.check wb row = true) : row.WellFormed wb := by
   simp only [Row.check, Bool.and_eq_true, decide_eq_true_eq, List.all_eq_true] at h
@@ -398,7 +438,14 @@ theorem Sheet.check_sound {wb s} (h : Sheet.check wb s = true) : s.WellFormed wb
 theorem Workbook.check_sound {wb : Workbook} (h : wb.check = true) : wb.WellFormed := by
   simp only [Workbook.check, Bool.and_eq_true, decide_eq_true_eq, List.all_eq_true,
     Bool.not_eq_true', List.isEmpty_eq_false_iff] at h
-  obtain ⟨⟨⟨⟨h1, h2⟩, h3⟩, h4⟩, h5⟩ := h
-  exact ⟨h1, fun s hs => Sheet.check_sound (h2 s hs), Package.noDups_sound h3, h4, h5⟩
+  obtain ⟨⟨⟨⟨⟨⟨⟨h1, h2⟩, h3⟩, h4⟩, h5⟩, h6⟩, h7⟩, h8⟩ := h
+  refine ⟨h1, fun s hs => Sheet.check_sound (h2 s hs), Package.noDups_sound h3, h4, h5,
+    Package.noDups_sound h6, ?_, ?_⟩
+  · simp only [Bool.or_eq_true, List.isEmpty_iff, beq_iff_eq] at h7
+    exact h7
+  · intro id hid
+    have := h8 id hid
+    simp only [Bool.or_eq_true, decide_eq_true_eq, List.contains_iff_mem] at this
+    exact this
 
 end Xlsx

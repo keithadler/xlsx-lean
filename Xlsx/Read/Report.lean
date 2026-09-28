@@ -88,6 +88,8 @@ def cellProblems (wb : Workbook) (row : Row) (c : Cell) (place : String) : Array
   if c.style ≥ wb.styleCount then out := out.push ⟨"style_ok", at_, s!"style {c.style}; styles.xml has {wb.styleCount}"⟩
   if let some f := c.formula then
     if !textOk f then out := out.push ⟨"formula_ok", at_, textWhy f⟩
+  if wb.isDateStyle c.style && !c.stored.dateOk wb.date1904 then
+    out := out.push ⟨"date_ok", at_, s!"a date format on a number outside 0 to {Dates.maxSerial wb.date1904} (9999-12-31)"⟩
   return out
 where
   textWhy (t : String) : String :=
@@ -99,6 +101,14 @@ def workbookProblems (wb : Workbook) (sheetEntries : Array (String × String)) :
   let mut out : Array Problem := #[]
   if wb.sheets.isEmpty then out := out.push ⟨"has_sheet", "workbook", "no worksheets"⟩
   if wb.styleCount == 0 then out := out.push ⟨"has_style", "styles", "cellXfs is empty"⟩
+  let ids := wb.numFmts.map (·.1)
+  for (i, id) in (List.range ids.length).zip ids do
+    if (ids.take i).contains id then out := out.push ⟨"numfmt_ids_unique", "styles", s!"numFmtId {id} is declared twice"⟩
+  unless wb.xfFormats.isEmpty || wb.xfFormats.length == wb.styleCount do
+    out := out.push ⟨"xf_formats", "styles", s!"{wb.xfFormats.length} numFmtIds for {wb.styleCount} styles"⟩
+  for (i, id) in (List.range wb.xfFormats.length).zip wb.xfFormats do
+    unless id < 164 || ids.contains id do
+      out := out.push ⟨"numfmt_ref", s!"style {i}", s!"numFmtId {id} is not built in and not declared"⟩
   for (i, t) in (List.range wb.sst.length).zip wb.sst do
     if !textOk t then out := out.push ⟨"sst_ok", s!"sharedStrings #{i}", cellProblems.textWhy t⟩
   let keys := wb.sheets.map Sheet.key
@@ -190,6 +200,21 @@ def reportText (path : String) (l : Loaded) : String := Id.run do
   s := s ++ s!"\n  verdict: {if ok then "follows every rule of the spec" else "breaks the spec"}\n"
   return s
 
+/-- The date a date-formatted number shows, as ISO text. -/
+def dateOf (wb : Workbook) (c : Cell) : Option String :=
+  if !wb.isDateStyle c.style then none
+  else
+    let parts : Option (Nat × Nat) := match c.stored with
+      | .number n => if n < 0 then none else some (n.toNat, 0)
+      | .real m e => Dates.split m e
+      | _ => none
+    parts.map fun (d, s) => (Dates.toDateTime wb.date1904 d s).iso
+
+def withDate (wb : Workbook) (c : Cell) (j : Json) : Json :=
+  match dateOf wb c, j with
+  | some d, .obj kvs => .obj (kvs.insert "date" (Json.str d))
+  | _, j => j
+
 def reportJson (path : String) (l : Loaded) : Json :=
   let v := l.verdict
   Json.mkObj [("path", path), ("package_check", toJson v.package), ("conforms_check", toJson v.conforms),
@@ -201,8 +226,8 @@ def reportJson (path : String) (l : Loaded) : Json :=
       ("cells", Json.arr (s.rows.toArray.flatMap fun r => r.cells.toArray.map fun c =>
         Json.mkObj [("ref", if 0 < c.ref.col && 0 < c.ref.row then c.ref.toA1 else ""),
           ("value", match c.stored.resolve l.wb.sst with
-            | some (.number n) => Json.mkObj [("t", "n"), ("v", toString n)]
-            | some (.real m e) => Json.mkObj [("t", "r"), ("m", toString m), ("e", toString e)]
+            | some (.number n) => withDate l.wb c (Json.mkObj [("t", "n"), ("v", toString n)])
+            | some (.real m e) => withDate l.wb c (Json.mkObj [("t", "r"), ("m", toString m), ("e", toString e)])
             | some (.text t) => Json.mkObj [("t", "s"), ("v", t)]
             | some (.bool b) => Json.mkObj [("t", "b"), ("v", toJson b)]
             | some (.error c) => Json.mkObj [("t", "e"), ("v", c)]

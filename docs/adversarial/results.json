@@ -16,7 +16,7 @@
   },
   "calamine": {
    "status": "crashes",
-   "error": "PanicException: index out of bounds: the len is 14 but the index is 99"
+   "error": "PanicException: index out of bounds: the len is 15 but the index is 99"
   },
   "sheetjs": {
    "status": "rejects",
@@ -995,7 +995,7 @@
  {
   "name": "G21-merges-and-dimension",
   "kind": "probe",
-  "what": "dimension A1:C6, merges A7:C7 and D1:D3",
+  "what": "dimension A1:D8, merges A7:C7, D1:D3 and the sheet's own A8:C8",
   "ours": true,
   "failed": [],
   "expat": {
@@ -1034,6 +1034,149 @@
   },
   "sheetjs": {
    "status": "ok"
+  }
+ },
+ {
+  "name": "W18-numfmt-undeclared",
+  "kind": "broken",
+  "what": "a style with numFmtId 200, never declared",
+  "ours": false,
+  "failed": [
+   "workbook_check"
+  ],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "W19-date-out-of-range",
+  "kind": "broken",
+  "what": "a date format on 3000000 (past 9999-12-31) and on -1",
+  "ours": false,
+  "failed": [
+   "workbook_check"
+  ],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "differs",
+   "diffs": [
+    "Probe!A1: read '#VALUE!', model '10113-09-19'",
+    "Probe!B1: read datetime.datetime(1899, 12, 29, 0, 0), model '-1'"
+   ],
+   "count": 2
+  },
+  "calamine": {
+   "status": "crashes",
+   "error": "PanicException: called `Result::unwrap()` on an `Err` value: PyErr { type: <class 'ValueError'>, value: ValueError('year 10113 is out of range'), traceback: None }"
+  },
+  "sheetjs": {
+   "status": "differs",
+   "diffs": [
+    "Probe!A1: read '10113-09-19', model '10113-09-19'",
+    "Probe!B1: read '1899-12-29', model '-1'"
+   ],
+   "count": 2
+  }
+ },
+ {
+  "name": "W20-numfmt-twice",
+  "kind": "broken",
+  "what": "numFmtId 164 declared twice",
+  "ours": false,
+  "failed": [
+   "workbook_check"
+  ],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "G24-dates-1900",
+  "kind": "probe",
+  "what": "serials 0, 1, 59, 60, 61, 45000 in 1900 dates, a time, a custom format",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "differs",
+   "diffs": [
+    "Probe!A1: read datetime.time(0, 0), model '1900-01-00'",
+    "Probe!D1: read datetime.datetime(1900, 2, 28, 0, 0), model '1900-02-29'"
+   ],
+   "count": 2
+  },
+  "calamine": {
+   "status": "differs",
+   "diffs": [
+    "Probe!A1: read datetime.time(0, 0), model '1900-01-00'",
+    "Probe!D1: read datetime.date(1900, 2, 28), model '1900-02-29'"
+   ],
+   "count": 2
+  },
+  "sheetjs": {
+   "status": "differs",
+   "diffs": [
+    "Probe!A1: read '1899-12-30', model '1900-01-00'",
+    "Probe!B1: read '1899-12-31', model '1900-01-01'",
+    "Probe!C1: read '1900-02-27', model '1900-02-28'",
+    "Probe!D1: read '1900-02-28', model '1900-02-29'"
+   ],
+   "count": 4
+  }
+ },
+ {
+  "name": "G25-dates-1904",
+  "kind": "probe",
+  "what": "serials 0, 1, 45000 in the 1904 date system",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "differs",
+   "diffs": [
+    "Probe!A1: read datetime.time(0, 0), model '1904-01-01'"
+   ],
+   "count": 1
+  },
+  "calamine": {
+   "status": "differs",
+   "diffs": [
+    "Probe!A1: read datetime.time(0, 0), model '1904-01-01'"
+   ],
+   "count": 1
+  },
+  "sheetjs": {
+   "status": "differs",
+   "diffs": [
+    "Probe!A1: read '1899-12-30', model '1904-01-01'",
+    "Probe!B1: read '1899-12-31', model '1904-01-02'",
+    "Probe!C1: read '2023-03-15', model '2027-03-16'"
+   ],
+   "count": 3
   }
  },
  {
