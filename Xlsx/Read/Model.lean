@@ -68,16 +68,18 @@ def partOfPath (path : String) : PartName :=
   | stem :: exts => ⟨segs.dropLast, stem, exts⟩
   | [] => ⟨segs.dropLast, file, []⟩
 
-/-- `..` and `.` removed; `none` if it climbs above the root. -/
+/-- `..` and `.` removed, as RFC 3986 does (which OPC follows): a `..` at the root stays
+at the root, so `/_rels/.rels` may point at `../customXml/item1.xml`. -/
 def normalize (segs : List String) : Option (List String) :=
-  segs.foldl (fun acc s => acc.bind fun a =>
-    if s == "." || s == "" then some a
-    else if s == ".." then (if a.isEmpty then none else some a.dropLast)
-    else some (a ++ [s])) (some [])
+  some (segs.foldl (fun a s =>
+    if s == "." || s == "" then a
+    else if s == ".." then a.dropLast
+    else a ++ [s]) [])
 
 /-- A relationship target, relative when the file wrote it plainly, absolute otherwise. -/
 def targetOf (srcDir : List String) (raw : String) : Option (PartName × Bool) :=
-  let t := percentDecode raw
+  -- `#Sheet1!A1` is a place inside the source part itself; `a.xml#b` is part `a.xml`
+  let t := percentDecode ((raw.splitOn "#").headD "")
   if t.startsWith "/" then
     (normalize ((t.drop 1).toString.splitOn "/")).map fun segs => (partOfPath ("/".intercalate segs), true)
   else
@@ -148,8 +150,8 @@ the phonetic guide. -/
 def richText (n : Node) : String :=
   n.children.foldl (fun acc k =>
     match k.name with
-    | "t" => acc ++ k.textContent
-    | "r" => acc ++ ((k.child? "t").map Node.textContent).getD ""
+    | "t" => acc ++ Node.decodeXstring k.textContent
+    | "r" => acc ++ Node.decodeXstring (((k.child? "t").map Node.textContent).getD "")
     | _ => acc) ""
 
 /-! ## Loading -/
@@ -157,7 +159,7 @@ def richText (n : Node) : String :=
 def worksheetKnown : List String :=
   ["sheetPr", "dimension", "sheetViews", "sheetFormatPr", "cols", "sheetData", "pageMargins",
    "pageSetup", "headerFooter", "printOptions", "sheetCalcPr", "extLst", "mergeCells", "tableParts",
-   "hyperlinks"]
+   "hyperlinks", "cols", "conditionalFormatting", "dataValidations"]
 
 def parsePart (notes : Array Note) (name : String) (data : ByteArray) : Option Node × Array Note :=
   match parse data with
@@ -167,6 +169,7 @@ def parsePart (notes : Array Note) (name : String) (data : ByteArray) : Option N
 /-- What reading a sheet's rows has gathered so far. -/
 structure RowAcc where
   rows : Array Row := #[]
+  sharedF : Array SharedFormula := #[]
   prevRow : Nat := 0
   notes : Array Note
   shared : Nat := 0
@@ -177,6 +180,7 @@ def rowStep (place : String) (acc : RowAcc) (rn : Node) : RowAcc := Id.run do
   let mut notes := acc.notes
   let mut shared := acc.shared
   let mut dates := acc.dates
+  let mut sharedF := acc.sharedF
   let idx := match rn.attr? "r" with
     | some r => r.toNat?.getD 0
     | none => acc.prevRow + 1
@@ -191,8 +195,13 @@ def rowStep (place : String) (acc : RowAcc) (rn : Node) : RowAcc := Id.run do
     prevCol := ref.col
     let style := ((cn.attr? "s").bind String.toNat?).getD 0
     let formula := (cn.child? "f").map Node.textContent
+    let mut sf : Option SharedFormula := none
     if let some f := cn.child? "f" then
-      if f.attr? "t" == some "shared" then shared := shared + 1
+      if f.attr? "t" == some "shared" then
+        shared := shared + 1
+        let si := ((f.attr? "si").bind String.toNat?).getD 0
+        let master := ((f.attr? "ref").bind parseRange).map fun r => (r, f.textContent)
+        sf := some { si, cell := ref, master }
     -- an empty <v/> is a formula with no cached value yet (openpyxl writes these)
     let v := ((cn.child? "v").map Node.textContent).filter (!·.trimAscii.isEmpty)
     let t := (cn.attr? "t").getD "n"
@@ -203,7 +212,7 @@ def rowStep (place : String) (acc : RowAcc) (rn : Node) : RowAcc := Id.run do
         | none => do notes := notes.push ⟨.error, place, s!"{a1}: shared string index {v} is not a number"⟩; pure .empty
       | "b", some v => pure (.bool (v.trimAscii.toString == "1" || v.trimAscii.toString == "true"))
       | "e", some v => pure (.error v)
-      | "str", some v => pure (.inline v)
+      | "str", some v => pure (.inline (Node.decodeXstring v))
       | "inlineStr", _ => pure (.inline (((cn.child? "is").map richText).getD ""))
       | "d", some v => do dates := dates + 1; pure (.inline v)
       | "n", some v => match parseNumber v with
@@ -211,8 +220,10 @@ def rowStep (place : String) (acc : RowAcc) (rn : Node) : RowAcc := Id.run do
         | none => do notes := notes.push ⟨.error, place, s!"{a1}: {v} is not a number"⟩; pure .empty
       | "n", none | "s", none | "b", none | "e", none | "str", none | "d", none => pure .empty
       | other, _ => do notes := notes.push ⟨.error, place, s!"{a1}: unknown cell type t=\"{other}\""⟩; pure .empty
-    cells := cells.push (Cell.mk ref stored style formula)
-  return { rows := acc.rows.push ⟨idx, cells.toList⟩, prevRow := idx, notes, shared, dates }
+    -- a shared formula lives in the sheet's list of them, not in the cell
+    cells := cells.push (Cell.mk ref stored style (if sf.isSome then none else formula))
+    if let some x := sf then sharedF := sharedF.push x
+  return { acc with rows := acc.rows.push ⟨idx, cells.toList⟩, prevRow := idx, notes, shared, dates, sharedF }
 
 /-- The rest of a sheet, once its rows are read. -/
 def finishSheet (sheetName : String) (entry : String) (root : Node) (acc : RowAcc) :
@@ -227,17 +238,31 @@ def finishSheet (sheetName : String) (entry : String) (root : Node) (acc : RowAc
     match (d.attr? "ref").bind parseRange with
     | some r => dimension := some r
     | none => notes := notes.push ⟨.error, place, s!"dimension ref {(d.attr? "ref").getD ""} is not a range"⟩
-  let mut merges : List Range := []
+  let mut merges : Array Range := #[]
   if let some mc := root.child? "mergeCells" then
     for m in mc.childrenNamed "mergeCell" do
       match (m.attr? "ref").bind parseRange with
-      | some r => merges := merges ++ [r]
+      | some r => merges := merges.push r
       | none => notes := notes.push ⟨.error, place, s!"mergeCell ref {(m.attr? "ref").getD ""} is not a range"⟩
-  if acc.shared > 0 then
-    notes := notes.push ⟨.unmodeled, place, s!"{acc.shared} shared formulas (kept as written, not expanded)"⟩
+  let cols := (((root.child? "cols").map (·.childrenNamed "col")).getD #[]).toList.map fun c =>
+    (((c.attr? "min").bind String.toNat?).getD 0, ((c.attr? "max").bind String.toNat?).getD 0)
+  let condFormats := (root.childrenNamed "conditionalFormatting").toList.map fun cf =>
+    CondFormat.mk ((cf.attr? "sqref").getD "")
+      ((cf.childrenNamed "cfRule").toList.filterMap fun r => (r.attr? "dxfId").bind String.toNat?)
+  let validations := (((root.child? "dataValidations").map (·.childrenNamed "dataValidation")).getD #[]).toList.map
+    fun v => ({ sqref := (v.attr? "sqref").getD "", kind := (v.attr? "type").getD "" } : Validation)
   if acc.dates > 0 then
     notes := notes.push ⟨.unmodeled, place, s!"{acc.dates} ISO date cells (t=\"d\"), read as text"⟩
-  return ({ name := sheetName, rows := acc.rows.toList, dimension, merges }, notes)
+  let sh : Sheet := {
+    name := sheetName
+    rows := acc.rows.toList
+    dimension := dimension
+    merges := merges.toList
+    cols := cols
+    condFormats := condFormats
+    validations := validations
+    shared := acc.sharedF.toList }
+  return (sh, notes)
 
 /-- Read a sheet part. Rows are read one `<row>` at a time straight from the bytes, so
 only the model is kept, never the whole tree; the rest of the sheet is parsed from a
@@ -279,10 +304,10 @@ def readSheet (sheetName entry : String) (b : ByteArray) (notes : Array Note) :
 
 def load (entries : Array ZipEntry) : Loaded := Id.run do
   let mut notes : Array Note := #[]
-  let mut parts : List PartName := []
-  let mut rels : List (Source × List Rel) := []
-  let mut defaults : List (String × String) := []
-  let mut overrides : List (PartName × String) := []
+  let mut parts : Array PartName := #[]
+  let mut rels : Array (Source × List Rel) := #[]
+  let mut defaults : Array (String × String) := #[]
+  let mut overrides : Array (PartName × String) := #[]
   let mut sawTypes := false
   let files : List (String × ByteArray) :=
     (entries.filter (fun e => !e.name.endsWith "/")).toList.map fun e => (e.name, e.data)
@@ -293,33 +318,36 @@ def load (entries : Array ZipEntry) : Loaded := Id.run do
       notes := n
       if let some root := root then
         for d in root.childrenNamed "Default" do
-          defaults := defaults ++ [((d.attr? "Extension").getD "", (d.attr? "ContentType").getD "")]
+          defaults := defaults.push (((d.attr? "Extension").getD "", (d.attr? "ContentType").getD ""))
         for o in root.childrenNamed "Override" do
           let pn := percentDecode ((o.attr? "PartName").getD "")
-          overrides := overrides ++ [(partOfPath ((pn.dropWhile (· == '/')).toString), (o.attr? "ContentType").getD "")]
+          overrides := overrides.push ((partOfPath ((pn.dropWhile (· == '/')).toString), (o.attr? "ContentType").getD ""))
     else match relsSource name with
       | some src =>
         let (root, n) := parsePart notes name data
         notes := n
-        let mut rs : List Rel := []
+        let mut rs : Array Rel := #[]
         if let some root := root then
           for r in root.childrenNamed "Relationship" do
             let id := (r.attr? "Id").getD ""
             if r.attr? "TargetMode" == some "External" then
               let ty := relTypeOf ((r.attr? "Type").getD "")
-              rs := rs ++ [Rel.mk id ty ⟨[], (r.attr? "Target").getD "", []⟩ false true]
+              rs := rs.push (Rel.mk id ty ⟨[], (r.attr? "Target").getD "", []⟩ false true)
               continue
-            match targetOf src.dir ((r.attr? "Target").getD "") with
+            let rawT := (r.attr? "Target").getD ""
+            let rawT := if rawT.startsWith "#" then
+              (match src with | .part p => p.render | .package => "/") else rawT
+            match targetOf src.dir rawT with
             | some (target, absolute) =>
-              rs := rs ++ [{ id, type := relTypeOf ((r.attr? "Type").getD ""), target, absolute }]
+              rs := rs.push ({ id, type := relTypeOf ((r.attr? "Type").getD ""), target, absolute })
             | none => notes := notes.push ⟨.error, name, s!"{id}: target {(r.attr? "Target").getD ""} climbs out of the package"⟩
-        rels := rels ++ [(src, rs)]
+        rels := rels.push (src, rs.toList)
       | none =>
         if name.contains '\\' then
           notes := notes.push ⟨.error, name, "a backslash in an entry name; ZIP and OPC separate folders with /"⟩
-        parts := parts ++ [partOfPath name]
+        parts := parts.push (partOfPath name)
   unless sawTypes do notes := notes.push ⟨.error, "[Content_Types].xml", "missing"⟩
-  let pkg : Package := { parts, defaults, overrides, rels }
+  let pkg : Package := { parts := parts.toList, defaults := defaults.toList, overrides := overrides.toList, rels := rels.toList }
   -- part names are compared without ASCII case, as OPC requires
   let data (p : PartName) : Option ByteArray :=
     (files.find? (fun (n, _) => (partOfPath n).key == p.key)).map (·.2)
@@ -331,7 +359,12 @@ def load (entries : Array ZipEntry) : Loaded := Id.run do
   let mut numFmts : List (Nat × String) := []
   let mut xfFormats : List Nat := []
   let mut date1904 := false
-  let mut names : List DefinedName := []
+  let mut names : Array DefinedName := #[]
+  let mut fontCount := 1
+  let mut fillCount := 2
+  let mut borderCount := 1
+  let mut dxfCount := 0
+  let mut xfRefs : List (Nat × Nat × Nat) := []
   match pkg.mainDocument with
   | [main] =>
     let mainRels := pkg.relsOf (.part main)
@@ -352,6 +385,14 @@ def load (entries : Array ZipEntry) : Loaded := Id.run do
           xfFormats := (((root.child? "cellXfs").map (·.childrenNamed "xf")).getD #[]).toList.map fun x =>
             ((x.attr? "numFmtId").bind String.toNat?).getD 0
           if xfFormats.all (· == 0) then xfFormats := []
+          let count (name child : String) : Nat := ((root.child? name).map (·.childrenNamed child |>.size)).getD 0
+          fontCount := count "fonts" "font"
+          fillCount := count "fills" "fill"
+          borderCount := count "borders" "border"
+          dxfCount := count "dxfs" "dxf"
+          xfRefs := (((root.child? "cellXfs").map (·.childrenNamed "xf")).getD #[]).toList.map fun x =>
+            let g (a : String) := ((x.attr? a).bind String.toNat?).getD 0
+            (g "fontId", g "fillId", g "borderId")
     match data main with
     | none => notes := notes.push ⟨.error, main.render, "the main document is not in the archive"⟩
     | some d =>
@@ -361,11 +402,11 @@ def load (entries : Array ZipEntry) : Loaded := Id.run do
         for d in ((root.child? "definedNames").map (·.childrenNamed "definedName")).getD #[] do
           let scope := (d.attr? "localSheetId").bind String.toNat?
           let hidden := d.attr? "hidden" == some "1" || d.attr? "hidden" == some "true"
-          names := names ++ [DefinedName.mk ((d.attr? "name").getD "") scope d.textContent hidden]
+          names := names.push (DefinedName.mk (Node.decodeXstring ((d.attr? "name").getD "")) scope d.textContent hidden)
         if let some pr := root.child? "workbookPr" then
           date1904 := pr.attr? "date1904" == some "1" || pr.attr? "date1904" == some "true"
         for s in ((root.child? "sheets").map (·.childrenNamed "sheet")).getD #[] do
-          let sname := (s.attr? "name").getD ""
+          let sname := Node.decodeXstring ((s.attr? "name").getD "")
           let rid := (s.attr? "id").getD ""
           match mainRels.find? (·.id == rid) with
           | none => notes := notes.push ⟨.error, main.entryName, s!"sheet {sname}: r:id {rid} names no relationship"⟩
@@ -399,26 +440,51 @@ def load (entries : Array ZipEntry) : Loaded := Id.run do
                           match (troot.attr? "ref").bind parseRange with
                           | none => notes := notes.push ⟨.error, (tr.resolve target.dir).entryName, "the table's ref is not a range"⟩
                           | some range =>
-                            let tname := (troot.attr? "displayName").getD ((troot.attr? "name").getD "")
+                            let tname := Node.decodeXstring ((troot.attr? "displayName").getD ((troot.attr? "name").getD ""))
                             let header := troot.attr? "headerRowCount" != some "0"
                             let cols := (((troot.child? "tableColumns").map (·.childrenNamed "tableColumn")).getD #[]).toList.map
-                              fun c => (c.attr? "name").getD ""
+                              fun c => Node.decodeXstring ((c.attr? "name").getD "")
                             tables := tables ++ [Table.mk tname range header cols]
                   let hyperlinks : List Hyperlink := (((root.child? "hyperlinks").map (·.childrenNamed "hyperlink")).getD #[]).toList.filterMap fun hl =>
                     ((hl.attr? "ref").bind parseRange).map fun ref =>
                       { ref, rid := hl.attr? "id", location := hl.attr? "location" }
                   let relIds := sheetRels.map (·.id)
-                  sheets := sheets ++ [{ sheet with state, tables, hyperlinks, relIds }]
+                  let mut comments : List Comment := []
+                  let mut authors := 0
+                  for cr in sheetRels.filter (fun r => r.type == .other "http://schemas.openxmlformats.org/officeDocument/2006/relationships/comments") do
+                    match data (cr.resolve target.dir) with
+                    | none => pure ()
+                    | some cb =>
+                      let (croot, n) := parsePart notes (cr.resolve target.dir).entryName cb
+                      notes := n
+                      if let some croot := croot then
+                        authors := ((croot.child? "authors").map (·.childrenNamed "author" |>.size)).getD 0
+                        comments := (((croot.child? "commentList").map (·.childrenNamed "comment")).getD #[]).toList.map
+                          fun c => ({ ref := (c.attr? "ref").getD "", author := ((c.attr? "authorId").bind String.toNat?).getD 0 } : Comment)
+                  sheets := sheets ++ [{ sheet with state, tables, hyperlinks, relIds, comments, authors }]
                   sheetEntries := sheetEntries.push (sname, target.entryName)
   | [] => notes := notes.push ⟨.error, "_rels/.rels", "no officeDocument relationship"⟩
   | _ => notes := notes.push ⟨.error, "_rels/.rels", "more than one officeDocument relationship"⟩
   let modeled := [workbookType, worksheetType, stylesType, sstType, relsType,
-    "application/vnd.openxmlformats-officedocument.spreadsheetml.table+xml"]
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.table+xml",
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.comments+xml"]
   let others := pkg.parts.filter fun p => !(modeled.contains ((pkg.contentType p).getD ""))
   unless others.isEmpty do
     notes := notes.push ⟨.unmodeled, "package", s!"{others.length} parts outside the model: " ++
       ", ".intercalate (others.take 8 |>.map (·.entryName)) ++ (if others.length > 8 then ", …" else "")⟩
-  let wb : Workbook := { sheets, sst, styleCount, numFmts, xfFormats, date1904, names }
+  let wb : Workbook := {
+    sheets := sheets
+    sst := sst
+    styleCount := styleCount
+    numFmts := numFmts
+    xfFormats := xfFormats
+    date1904 := date1904
+    names := names.toList
+    fontCount := fontCount
+    fillCount := fillCount
+    borderCount := borderCount
+    dxfCount := dxfCount
+    xfRefs := xfRefs }
   return { pkg := pkg, wb := wb, sheetEntries := sheetEntries, notes := notes, entries := entries.size }
 
 def loadFile (path : System.FilePath) : IO (Except String Loaded) := do

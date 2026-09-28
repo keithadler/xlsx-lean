@@ -54,6 +54,55 @@ def child? (n : Node) (name : String) : Option Node := n.children.find? (·.name
 
 def childrenNamed (n : Node) (name : String) : Array Node := n.children.filter (·.name == name)
 
+/-- Markup compatibility (ECMA-376 Part 3): an `mc:AlternateContent` stands for the
+content of its first `mc:Choice`, or its `mc:Fallback` when it has no choice. -/
+partial def flattenMce : Node → Node
+  | .elem n a kids =>
+    let kids := kids.foldl (fun acc k =>
+      match k with
+      | .elem kn _ kk =>
+        if localName kn == "AlternateContent" then
+          let pick := (kk.find? (·.name == "Choice")).orElse (fun _ => kk.find? (·.name == "Fallback"))
+          match pick with
+          | some p => acc ++ p.kids.map flattenMce
+          | none => acc
+        else acc.push (flattenMce k)
+      | t => acc.push t) #[]
+    .elem n a kids
+  | t => t
+
+/-- Undo `ST_Xstring` escapes: `_x000a_` is a line feed, `_x005F_` an underscore, and
+`_xD83D__xDE42_` one astral character. A lone surrogate is left as written. -/
+def decodeXstring (s : String) : String := Id.run do
+  let cs := s.toList.toArray
+  let esc (i : Nat) : Option Nat :=
+    if cs[i]! == '_' && i + 6 < cs.size && cs[i+1]! == 'x' && cs[i+6]! == '_' then
+      let v := [cs[i+2]!, cs[i+3]!, cs[i+4]!, cs[i+5]!].foldl (fun acc c => acc * 16 + (if c.isDigit then c.toNat - 48
+        else if 'a' ≤ c && c ≤ 'f' then c.toNat - 87 else if 'A' ≤ c && c ≤ 'F' then c.toNat - 55 else 65536)) 0
+      if v < 65536 then some v else none
+    else none
+  let mut out := ""
+  let mut i := 0
+  while i < cs.size do
+    match esc i with
+    | some v =>
+      if 0xD800 ≤ v && v < 0xDC00 then
+        match esc (i + 7) with
+        | some w =>
+          if 0xDC00 ≤ w && w < 0xE000 then
+            out := out.push (Char.ofNat (0x10000 + (v - 0xD800) * 0x400 + (w - 0xDC00)))
+            i := i + 14
+            continue
+        | none => pure ()
+      if v < 0xD800 || 0xE000 ≤ v then
+        out := out.push (Char.ofNat v)
+        i := i + 7
+        continue
+    | none => pure ()
+    out := out.push cs[i]!
+    i := i + 1
+  return out
+
 /-- All text below this node, in order. -/
 partial def textContent : Node → String
   | .text s => s
@@ -151,6 +200,7 @@ partial def attrValue : P String := do
     | none => fail "unterminated attribute value"
     | some c =>
       if some c == q then (do modify (· + 1); pure acc)
+      else if c == 60 then fail "< in an attribute value"
       else if c == 38 then (do let e ← entity b; loop (acc ++ e))
       else if c == 9 || c == 10 || c == 13 then
         -- CR LF counts once (line-ending handling happens before normalization)
@@ -254,7 +304,7 @@ partial def document : P Node := do
 
 end
 
-def parse (b : ByteArray) : Except String Node := (document b).run' 0
+def parse (b : ByteArray) : Except String Node := ((document b).run' 0).map Node.flattenMce
 
 /-- Parse the one element that starts at `pos` (at its `<`), and say where it ends. -/
 def elementAt (b : ByteArray) (pos : Nat) : Except String (Node × Nat) := (element b).run pos

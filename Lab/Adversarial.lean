@@ -61,10 +61,12 @@ def lay : Package := layout 2
 /-- A case written with `Workbook.toPackage`, which lays out tables, plus each sheet's
 hyperlink relationships (external addresses), which the model does not carry. -/
 def withTables (name kind what : String) (wb : Workbook) : Case := Id.run do
-  let tabled := { wb with sheets := wb.sheets.map fun s =>
+  let tabled : Workbook := { wb with sheets := wb.sheets.map fun (s : Sheet) =>
     { s with relIds := (List.range' 1 s.tables.length).map rid ++ s.relIds } }
   let base := tabled.toPackage
   let mut rels := base.rels
+  let mut parts := base.parts
+  let mut overrides := base.overrides
   for (i, s) in (sheetNums wb.sheets.length).zip wb.sheets do
     let links := s.hyperlinks.filterMap (·.rid) |>.filter (s.relIds.contains ·)
     unless links.isEmpty do
@@ -73,7 +75,19 @@ def withTables (name kind what : String) (wb : Workbook) : Case := Id.run do
         rels := rels.map fun (src, rs) => if src == .part (sheetPart i) then (src, rs ++ extra) else (src, rs)
       else
         rels := rels ++ [(.part (sheetPart i), extra)]
-  return { name, kind, what, wb := tabled, pkg := { base with rels } }
+  -- comments: a part per sheet that has any, and a relationship to it
+  for (i, s) in (sheetNums wb.sheets.length).zip wb.sheets do
+    unless s.comments.isEmpty do
+      let r := Rel.mk "rIdC" (.other commentsRelType) (commentsPart i) true false
+      parts := parts ++ [commentsPart i]
+      overrides := overrides ++ [(commentsPart i, commentsType)]
+      if rels.any (·.1 == .part (sheetPart i)) then
+        rels := rels.map fun (src, rs) => if src == .part (sheetPart i) then (src, rs ++ [r]) else (src, rs)
+      else
+        rels := rels ++ [(.part (sheetPart i), [r])]
+  let tabled : Workbook := { tabled with sheets := tabled.sheets.map fun (s : Sheet) =>
+    if s.comments.isEmpty then s else { s with relIds := s.relIds ++ ["rIdC"] } }
+  return { name, kind, what, wb := tabled, pkg := { base with rels, parts, overrides } }
 
 def factsTable : Table := { name := "Facts", range := ⟨⟨1, 1⟩, ⟨3, 6⟩⟩, columns := ["Fact", "Value", "Proved by"] }
 
@@ -124,7 +138,7 @@ def broken : List Case :=
         parts := lay.parts ++ [⟨["xl", "theme"], "theme1", ["bin"]⟩] } }
   , c "W13-same-cell-twice" "broken" "A1 written twice in one row, with 1 and then 2"
       (withRows [⟨1, [⟨⟨1, 1⟩, .number 1, 0, none⟩, ⟨⟨1, 1⟩, .number 2, 0, none⟩]⟩])
-  , c "W14-dimension-too-small" "broken" "dimension A1:B2 on a sheet with cells to C6"
+  , c "W14-dimension-too-small" "probe" "dimension A1:B2 on a sheet with cells to C8 (a writer rule: readers ignore it)"
       (withLimits fun s => { s with dimension := some (Range.mk ⟨1, 1⟩ ⟨2, 2⟩) })
   , c "W15-merges-overlap" "broken" "merged A1:B2 and B2:C3"
       (withLimits fun s => { s with merges := [Range.mk ⟨1, 1⟩ ⟨2, 2⟩, Range.mk ⟨2, 2⟩ ⟨3, 3⟩] })
@@ -223,13 +237,42 @@ def probes : List Case :=
         relIds := ["rIdL1"] })
   , withTables "W31-hyperlink-dangling" "broken" "a hyperlink whose r:id names no relationship"
       (withLimits fun s => { s with hyperlinks := [{ ref := ⟨⟨1, 1⟩, ⟨1, 1⟩⟩, rid := some "rId9" }] })
-  , withTables "W32-hyperlink-nowhere" "broken" "a hyperlink with neither r:id nor location"
+  , withTables "W32-hyperlink-nowhere" "probe" "a hyperlink with neither r:id nor location (the schema allows it)"
       (withLimits fun s => { s with hyperlinks := [{ ref := ⟨⟨1, 1⟩, ⟨1, 1⟩⟩ }] })
+  , c "W33-font-dangling" "broken" "style 1 uses fontId 9 of 2"
+      { base with xfRefs := [(0, 0, 0), (9, 0, 0)] }
+  , c "W34-cf-dxf-dangling" "broken" "a conditional format with dxfId 7, and no dxfs"
+      (withLimits fun s => { s with condFormats := [{ sqref := "B2:B5", dxfIds := [7] }] })
+  , c "W35-dv-bad-range" "broken" "a data validation over \"ZZZZ9 A0\""
+      (withLimits fun s => { s with validations := [{ sqref := "ZZZZ9 A0", kind := "list" }] })
+  , withTables "W36-comment-author" "broken" "a comment by author 5 of 1"
+      (withLimits fun s => { s with comments := [{ ref := "A1", author := 5 }], authors := 1 })
+  , c "W37-shared-no-master" "broken" "B2 follows shared formula 0, which has no master"
+      (withLimits fun s => { s with shared := [{ si := 0, cell := ⟨2, 2⟩ }] })
+  , c "W38-cols-overlap" "broken" "column ranges A:C and B:D"
+      (withLimits fun s => { s with cols := [(1, 3), (2, 4)] })
+  , withTables "G30-more-content" "probe" "a conditional format with its dxf, a validation, a comment, a shared formula, columns"
+      { (withLimits fun s => { s with
+          condFormats := [{ sqref := "B2:B5 C2", dxfIds := [0] }]
+          validations := [{ sqref := "C2:C6", kind := "list" }]
+          comments := [{ ref := "A1", author := 0 }]
+          authors := 1
+          shared := [{ si := 0, cell := ⟨2, 2⟩, master := some (⟨⟨2, 2⟩, ⟨2, 4⟩⟩, "1+1") }, { si := 0, cell := ⟨2, 4⟩ }]
+          cols := [(1, 1), (2, 3)] }) with dxfCount := 1 }
   , c "G22-decimals" "probe" "decimals 3.25, 1E-3, -6.02E23, and an error value"
       (oneCellRow [⟨⟨1, 1⟩, .real 325 (-2), 0, none⟩, ⟨⟨2, 1⟩, .real 1 (-3), 0, none⟩,
         ⟨⟨3, 1⟩, .real (-602) 21, 0, none⟩, ⟨⟨4, 1⟩, .error "#N/A", 0, none⟩])
   , c "G23-formula-cached" "probe" "formulas with cached number and text results"
       (oneCellRow [⟨⟨1, 1⟩, .number 2, 0, some "1+1"⟩, ⟨⟨2, 1⟩, .inline "ab", 0, some "\"a\"&\"b\""⟩])
+  , c "G31-xstring-shared" "probe" "a shared string that looks like an escape: _x0041_ and _x005F_"
+      (shd "_x0041_ and _x005F_")
+  , c "G32-xstring-inline" "probe" "an inline string that looks like an escape: a_x000a_b"
+      (inl "a_x000a_b")
+  , c "G33-xstring-name" "probe" "a sheet named _x0041_" (withSheetName "_x0041_")
+  , c "G34-xstring-result" "probe" "a formula whose cached text result is _x0042_"
+      (oneCellRow [⟨⟨1, 1⟩, .inline "_x0042_", 0, some "\"_x0042_\""⟩])
+  , c "G35-x005F-plain" "probe" "a shared string with x005F_ in it, not an escape: ax005F_b"
+      (shd "ax005F_b")
   ]
 
 /-! ## Random well-formed workbooks -/

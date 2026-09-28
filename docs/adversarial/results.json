@@ -456,12 +456,10 @@
  },
  {
   "name": "W14-dimension-too-small",
-  "kind": "broken",
-  "what": "dimension A1:B2 on a sheet with cells to C6",
-  "ours": false,
-  "failed": [
-   "workbook_check"
-  ],
+  "kind": "probe",
+  "what": "dimension A1:B2 on a sheet with cells to C8 (a writer rule: readers ignore it)",
+  "ours": true,
+  "failed": [],
   "expat": {
    "status": "ok"
   },
@@ -1493,12 +1491,158 @@
  },
  {
   "name": "W32-hyperlink-nowhere",
+  "kind": "probe",
+  "what": "a hyperlink with neither r:id nor location (the schema allows it)",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "W33-font-dangling",
   "kind": "broken",
-  "what": "a hyperlink with neither r:id nor location",
+  "what": "style 1 uses fontId 9 of 2",
   "ours": false,
   "failed": [
    "workbook_check"
   ],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "W34-cf-dxf-dangling",
+  "kind": "broken",
+  "what": "a conditional format with dxfId 7, and no dxfs",
+  "ours": false,
+  "failed": [
+   "workbook_check"
+  ],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "rejects",
+   "error": "IndexError: list index out of range"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "W35-dv-bad-range",
+  "kind": "broken",
+  "what": "a data validation over \"ZZZZ9 A0\"",
+  "ours": false,
+  "failed": [
+   "workbook_check"
+  ],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "rejects",
+   "error": "TypeError: expected <class 'openpyxl.worksheet.cell_range.MultiCellRange'>"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "W36-comment-author",
+  "kind": "broken",
+  "what": "a comment by author 5 of 1",
+  "ours": false,
+  "failed": [
+   "workbook_check"
+  ],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "rejects",
+   "error": "IndexError: list index out of range"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "W37-shared-no-master",
+  "kind": "broken",
+  "what": "B2 follows shared formula 0, which has no master",
+  "ours": false,
+  "failed": [
+   "workbook_check"
+  ],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "W38-cols-overlap",
+  "kind": "broken",
+  "what": "column ranges A:C and B:D",
+  "ours": false,
+  "failed": [
+   "workbook_check"
+  ],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "G30-more-content",
+  "kind": "probe",
+  "what": "a conditional format with its dxf, a validation, a comment, a shared formula, columns",
+  "ours": true,
+  "failed": [],
   "expat": {
    "status": "ok"
   },
@@ -1546,6 +1690,137 @@
   },
   "openpyxl": {
    "status": "ok"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "G31-xstring-shared",
+  "kind": "probe",
+  "what": "a shared string that looks like an escape: _x0041_ and _x005F_",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "differs",
+   "diffs": [
+    "Probe!A1: read '_x0041_ and _', model '_x0041_ and _x005F_'"
+   ],
+   "count": 1
+  },
+  "calamine": {
+   "status": "differs",
+   "diffs": [
+    "Probe!A1: read '_x005F_x0041_ and _x005F_x005F_', model '_x0041_ and _x005F_'"
+   ],
+   "count": 1
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "G32-xstring-inline",
+  "kind": "probe",
+  "what": "an inline string that looks like an escape: a_x000a_b",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "differs",
+   "diffs": [
+    "Probe!A1: read 'a_x005F_x000a_b', model 'a_x000a_b'"
+   ],
+   "count": 1
+  },
+  "calamine": {
+   "status": "differs",
+   "diffs": [
+    "Probe!A1: read 'a_x005F_x000a_b', model 'a_x000a_b'"
+   ],
+   "count": 1
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "G33-xstring-name",
+  "kind": "probe",
+  "what": "a sheet named _x0041_",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "differs",
+   "diffs": [
+    "sheet names ['_x005F_x0041_', 'Columns']... != ['_x0041_', 'Columns']..."
+   ],
+   "count": 1
+  },
+  "calamine": {
+   "status": "differs",
+   "diffs": [
+    "sheet names ['_x005F_x0041_', 'Columns']... != ['_x0041_', 'Columns']..."
+   ],
+   "count": 1
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "G34-xstring-result",
+  "kind": "probe",
+  "what": "a formula whose cached text result is _x0042_",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "differs",
+   "diffs": [
+    "Probe!A1: read '_x005F_x0042_', model '_x0042_'"
+   ],
+   "count": 1
+  },
+  "calamine": {
+   "status": "differs",
+   "diffs": [
+    "Probe!A1: read '_x005F_x0042_', model '_x0042_'"
+   ],
+   "count": 1
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "G35-x005F-plain",
+  "kind": "probe",
+  "what": "a shared string with x005F_ in it, not an escape: ax005F_b",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "differs",
+   "diffs": [
+    "Probe!A1: read 'ab', model 'ax005F_b'"
+   ],
+   "count": 1
   },
   "calamine": {
    "status": "ok"

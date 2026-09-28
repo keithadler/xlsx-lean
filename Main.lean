@@ -27,11 +27,11 @@ def lab (args : List String) : IO UInt32 := do
       let l := Read.load zs
       let v := l.verdict
       -- the report of where names nothing exactly when the proved checkers say yes
-      let clean := v.problems.all (·.rule == "NoOrphans")
+      let clean := v.problems.all (fun p => p.rule == "NoOrphans" || p.rule == "DimensionsTight")
       if clean == (v.package && v.conforms && v.workbook) then explainAgrees := explainAgrees + 1
       else mismatches := mismatches.push s!"{c.name}: problems listed {v.problems.size}, checkers say {v.package && v.conforms && v.workbook}"
       if c.accepted then
-        let same := l.wb == c.wb && l.pkg.parts == c.pkg.parts && l.pkg.defaults == c.pkg.defaults
+        let same := l.wb.normalize == c.wb.normalize && l.pkg.parts == c.pkg.parts && l.pkg.defaults == c.pkg.defaults
           && l.pkg.overrides == c.pkg.overrides && l.pkg.rels == c.pkg.rels
         if same then roundtrip := roundtrip + 1
         else mismatches := mismatches.push s!"{c.name}: read back differently"
@@ -45,7 +45,21 @@ def lab (args : List String) : IO UInt32 := do
   IO.println s!"read back identical to the model: {roundtrip}/{accepted} accepted files"
   IO.println s!"where-report agrees with the checkers: {explainAgrees}/{cases.length}"
   for m in mismatches.toList.take 20 do IO.eprintln s!"  {m}"
-  return if wrong.isEmpty && mismatches.isEmpty then 0 else 1
+  -- the _xHHHH_ escape: what the writer escapes, the reader decodes back, on strings built
+  -- from the pieces that confuse it
+  let pieces := #["_", "x", "0", "5", "F", "a", "_x0041_", "_x005F_", "_x00", "_xD83D_", "_xDE42_", "🙂", "\n", "__"]
+  let mut xbad : Array String := #[]
+  let mut seed := 7
+  for _ in [0:20000] do
+    seed := lcg seed
+    let mut t := ""
+    for _ in [0:(seed % 9)] do
+      seed := lcg seed
+      t := t ++ pieces[(seed / 7) % pieces.size]!
+    if Read.Node.decodeXstring (xstr t) != t then xbad := xbad.push t
+  IO.println s!"_xHHHH_ escapes read back: {20000 - xbad.size}/20000 strings"
+  for t in xbad.toList.take 5 do IO.eprintln s!"  {repr t} reads back as {repr (Read.Node.decodeXstring (xstr t))}"
+  return if wrong.isEmpty && mismatches.isEmpty && xbad.isEmpty then 0 else 1
 
 /-- Write the example workbook as a real `.xlsx` file: `xlsxlean write [path]`. -/
 def example_ (args : List String) : IO UInt32 := do
@@ -127,25 +141,32 @@ def check (args : List String) : IO UInt32 := do
   if let ["--widget", f] := args then return ← widgetJson f
   if let ["--html", out, f] := args then return ← htmlReport out f
   let json := args.contains "--json"
-  let files := args.filter (· != "--json")
+  let cells := args.contains "--cells"
+  let files := args.filter (fun a => a != "--json" && a != "--cells")
   let mut bad := 0
-  let mut out : Array Json := #[]
+  let mut first := true
+  if json then IO.print "["
   for f in files do
+    let emit (j : Json) : IO Unit := do
+      IO.print ((if first then "" else ",\n") ++ j.compress)
+      (← IO.getStdout).flush
     match ← Read.loadFile f with
     | .error e =>
       bad := bad + 1
-      if json then out := out.push (Json.mkObj [("path", f), ("unreadable", e)])
+      if json then emit (Json.mkObj [("path", f), ("unreadable", e)]); first := false
       else IO.println s!"{f}\n  ✗ unreadable: {e}\n"
     | .ok l =>
       let v := l.verdict
       unless v.ok && (l.notes.filter (·.severity == .error)).isEmpty do bad := bad + 1
-      if json then out := out.push (Read.reportJson f l) else IO.println (Read.reportText f l)
-  if json then IO.println (Json.arr out).compress
+      if json then emit (Read.reportJson f l cells); first := false
+      else IO.println (Read.reportText f l)
+  if json then IO.println "]"
   return if bad == 0 then 0 else 1
 
 def usage : String := "xlsxlean: the XLSX format as a Lean proof, and a checker for real files.
 
   xlsxlean check [--json] FILE.xlsx ...   check files against the spec; exit 1 if any breaks it
+                                          (--json --cells also lists every cell value)
   xlsxlean check --html OUT.html FILE     the same, as one page to share: verdict, package, sheets
   xlsxlean write [PATH]                   write the example workbook (default out/example.xlsx)
   xlsxlean lab [DIR] [N]                  write the adversarial corpus with N random workbooks

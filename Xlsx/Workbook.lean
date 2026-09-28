@@ -1,5 +1,6 @@
 import Xlsx.Package
 import Xlsx.Dates
+import Xlsx.Merges
 
 /-!
 # The workbook: SpreadsheetML
@@ -97,6 +98,44 @@ structure Hyperlink where
   location : Option String := none
   deriving DecidableEq, Repr
 
+/-- `ST_Sqref`: space-separated ranges, `A1:B5 D7`. -/
+def parseSqref (s : String) : Option (List Range) :=
+  ((s.splitOn " ").filter (!·.isEmpty)).mapM parseRange
+
+/-- A range list that parses, is not empty, and names only real cells (**ECMA-376**). -/
+def sqrefOk (s : String) : Bool :=
+  match parseSqref s with
+  | some rs => !rs.isEmpty && rs.all (fun r => decide r.Valid)
+  | none => false
+
+/-- `<conditionalFormatting sqref="B2:B5"><cfRule dxfId="0" …/>` -/
+structure CondFormat where
+  sqref : String
+  /-- The `dxfId` of each rule that has one. -/
+  dxfIds : List Nat := []
+  deriving DecidableEq, Repr
+
+/-- `<dataValidation type="list" sqref="A1:A9">` -/
+structure Validation where
+  sqref : String
+  kind : String := ""
+  deriving DecidableEq, Repr
+
+/-- `<comment ref="A1" authorId="0">` in the sheet's comments part. -/
+structure Comment where
+  ref : String
+  author : Nat
+  deriving DecidableEq, Repr
+
+/-- A cell of a shared formula: `<f t="shared" si="0" ref="B2:B9">A2*2</f>` on the
+master, `<f t="shared" si="0"/>` on the others. -/
+structure SharedFormula where
+  si : Nat
+  cell : CellRef
+  /-- On the master: the range it covers, and its text. -/
+  master : Option (Range × String) := none
+  deriving DecidableEq, Repr
+
 structure Sheet where
   name : String
   rows : List Row
@@ -109,7 +148,25 @@ structure Sheet where
   hyperlinks : List Hyperlink := []
   /-- The relationship ids the sheet's own `.rels` part declares. -/
   relIds : List String := []
+  condFormats : List CondFormat := []
+  validations : List Validation := []
+  comments : List Comment := []
+  /-- How many authors the sheet's comments part lists. -/
+  authors : Nat := 0
+  shared : List SharedFormula := []
+  /-- `<col min="1" max="3"/>`: column ranges with widths or formats. -/
+  cols : List (Nat × Nat) := []
   deriving DecidableEq, Repr
+
+/-- Two column ranges share a column. -/
+def colsOverlap (a b : Nat × Nat) : Bool := a.1 ≤ b.2 && b.1 ≤ a.2
+
+/-- A dependent of a shared formula has its master on the sheet, whose range covers it
+(**ECMA-376**). -/
+def SharedFormula.hasMaster (fs : List SharedFormula) (f : SharedFormula) : Bool :=
+  f.master.isSome || fs.any fun m => m.si == f.si && match m.master with
+    | some (r, text) => r.contains f.cell && !text.isEmpty
+    | none => false
 
 /-- `<definedName name="Total" localSheetId="0">Sheet1!$A$1:$A$9</definedName>` -/
 structure DefinedName where
@@ -157,6 +214,15 @@ structure Workbook where
   sst : List String
   /-- How many entries `cellXfs` has. -/
   styleCount : Nat := 1
+  /-- How many fonts, fills and borders `styles.xml` lists, and differential formats
+(`dxfs`, which conditional formats point at). -/
+  fontCount : Nat := 2
+  fillCount : Nat := 2
+  borderCount : Nat := 1
+  dxfCount : Nat := 0
+  /-- The `(fontId, fillId, borderId)` of each `cellXfs` entry; empty means the writer's
+  own choice (style 0 plain, the rest bold). -/
+  xfRefs : List (Nat × Nat × Nat) := []
   /-- Custom number formats, `<numFmt numFmtId="164" formatCode="yyyy-mm-dd"/>`. -/
   numFmts : List (Nat × String) := []
   /-- The `numFmtId` of each `cellXfs` entry, in order; empty means all General (0). -/
@@ -298,8 +364,6 @@ structure Sheet.WellFormed (wb : Workbook) (s : Sheet) : Prop where
   rows : ∀ r ∈ s.rows, r.WellFormed wb
   /-- Rows are written top to bottom, each row once. -/
   sorted : (s.rows.map (·.index)).Pairwise (· < ·)
-  /-- The claimed used range holds every cell: readers size their grid from it (**ECMA-376**). -/
-  dimension_covers : ∀ d, s.dimension = some d → ∀ r ∈ s.rows, ∀ c ∈ r.cells, d.contains c.ref = true
   /-- Every merged range has its corners in order, inside the sheet (**ECMA-376**). -/
   merges_valid : ∀ m ∈ s.merges, m.Valid
   /-- No two merged ranges overlap: Excel drops overlapping merges as a repair (**Excel**). -/
@@ -316,13 +380,28 @@ structure Sheet.WellFormed (wb : Workbook) (s : Sheet) : Prop where
   tables_unmerged : ∀ t ∈ s.tables, ∀ m ∈ s.merges, t.range.overlaps m = false
   /-- Header cells show the column names (**Excel**). -/
   tables_header : ∀ t ∈ s.tables, t.headerOk wb.sst s = true
-  /-- A hyperlink goes somewhere: an address or a place in the workbook (**ECMA-376**). -/
-  links_target : ∀ h ∈ s.hyperlinks, h.rid.isSome ∨ h.location.isSome
   /-- A hyperlink covers real cells (**ECMA-376**). -/
   links_ref : ∀ h ∈ s.hyperlinks, h.ref.Valid
   /-- A hyperlink's `r:id` names a relationship of its sheet (**ECMA-376**). openpyxl
   refuses the whole workbook when one does not. -/
   links_rel : ∀ h ∈ s.hyperlinks, ∀ id, h.rid = some id → id ∈ s.relIds
+  /-- A conditional format covers real cells, and its rules' `dxfId`s exist (**ECMA-376**).
+  openpyxl refuses the whole workbook over a missing one. -/
+  cf_ok : ∀ c ∈ s.condFormats, sqrefOk c.sqref = true ∧ ∀ d ∈ c.dxfIds, d < wb.dxfCount
+  /-- A data validation covers real cells (**ECMA-376**). openpyxl refuses the whole
+  workbook when its range does not parse. -/
+  dv_ok : ∀ v ∈ s.validations, sqrefOk v.sqref = true
+  /-- A comment is on a real cell, by an author the comments list (**ECMA-376**).
+  openpyxl refuses the whole workbook over a missing author. -/
+  comments_ok : ∀ c ∈ s.comments, (match parseA1 c.ref with | some r => decide r.Valid | none => false) = true
+    ∧ c.author < s.authors
+  /-- Every shared-formula cell has its master, which covers it (**ECMA-376**). openpyxl
+  reads an orphaned one as the empty formula `=`. -/
+  formulas_shared_ok : ∀ f ∈ s.shared, SharedFormula.hasMaster s.shared f = true
+  /-- Column ranges run within the sheet (**ECMA-376**) and do not overlap (**Excel**
+  repairs overlaps). -/
+  cols_ok : ∀ c ∈ s.cols, 1 ≤ c.1 ∧ c.1 ≤ c.2 ∧ c.2 ≤ maxCol
+  cols_disjoint : s.cols.Pairwise (fun a b => colsOverlap a b = false)
 
 structure Workbook.WellFormed (wb : Workbook) : Prop where
   has_sheet : wb.sheets ≠ []
@@ -347,6 +426,10 @@ structure Workbook.WellFormed (wb : Workbook) : Prop where
   names_scoped : ∀ d ∈ wb.names, ∀ i, d.scope = some i → i < wb.sheets.length
   /-- The formula a name stands for is writable text (**XML**, **Excel**). -/
   names_text : ∀ d ∈ wb.names, textOk d.formula = true
+  /-- `fontId`, `fillId` and `borderId` of every cell format exist (**ECMA-376**). -/
+  xf_refs : ∀ x ∈ wb.xfRefs, x.1 < wb.fontCount ∧ x.2.1 < wb.fillCount ∧ x.2.2 < wb.borderCount
+  /-- Given for every style, or for none (**ECMA-376**). -/
+  xf_refs_len : wb.xfRefs = [] ∨ wb.xfRefs.length = wb.styleCount
   /-- Custom number format ids are unique (**ECMA-376**). -/
   numfmt_ids_unique : (wb.numFmts.map (·.1)).Nodup
   /-- `numFmtId` is given for every style, or for none (**ECMA-376**). -/
@@ -354,6 +437,27 @@ structure Workbook.WellFormed (wb : Workbook) : Prop where
   /-- A style's number format exists: ids below 164 are built in, the rest must be
   declared in `numFmts` (**ECMA-376**, **Excel**). -/
   numfmt_ref : ∀ id ∈ wb.xfFormats, id < 164 ∨ id ∈ wb.numFmts.map (·.1)
+
+/-- A rule for *writers*, not a condition for reading: each sheet's claimed used range
+(`<dimension>`) holds all its cells. Real files break it (seven of Apache POI's test
+files claim `A1` over more), and no reader tested relies on it, so it is not part of
+`WellFormed`; the first version of the spec had it there. -/
+def Workbook.DimensionsTight (wb : Workbook) : Prop :=
+  ∀ s ∈ wb.sheets, ∀ d, s.dimension = some d → ∀ r ∈ s.rows, ∀ c ∈ r.cells, d.contains c.ref = true
+
+def Workbook.dimensionsCheck (wb : Workbook) : Bool :=
+  wb.sheets.all fun s => match s.dimension with
+    | some d => s.rows.all fun r => r.cells.all fun c => d.contains c.ref
+    | none => true
+
+theorem Workbook.dimensionsCheck_sound {wb : Workbook} (h : wb.dimensionsCheck = true) :
+    wb.DimensionsTight := by
+  intro s hs d hd r hr c hc
+  simp only [Workbook.dimensionsCheck, List.all_eq_true] at h
+  have := h s hs
+  rw [hd] at this
+  simp only [List.all_eq_true] at this
+  exact this r hr c hc
 
 /-! ## What the rules buy -/
 
@@ -454,10 +558,12 @@ theorem increasing_sound : ∀ {l : List Nat}, increasing l = true → l.Pairwis
     · exact h.1
     · exact Nat.lt_trans h.1 (List.rel_of_pairwise_cons ih hx)
 
-def Cell.check (wb : Workbook) (row : Row) (c : Cell) : Bool :=
+/-- The cell check, given the number of shared strings, so a sheet counts them once and not
+once per cell (`List.length` walks the list). -/
+def Cell.checkWith (wb : Workbook) (sstCount : Nat) (row : Row) (c : Cell) : Bool :=
   c.ref.row == row.index && 0 < c.ref.col && c.ref.col ≤ maxCol
   && (match c.stored with
-      | .shared i => i < wb.sst.length
+      | .shared i => i < sstCount
       | .number n => n.natAbs < maxNumber
       | .inline t => textOk t
       | .real m e => realOk m e
@@ -467,9 +573,13 @@ def Cell.check (wb : Workbook) (row : Row) (c : Cell) : Bool :=
   && (match c.formula with | some f => textOk f | none => true)
   && (!wb.isDateStyle c.style || c.stored.dateOk wb.date1904)
 
-def Row.check (wb : Workbook) (row : Row) : Bool :=
-  0 < row.index && row.index ≤ maxRow && row.cells.all (Cell.check wb row)
+def Cell.check (wb : Workbook) (row : Row) (c : Cell) : Bool := Cell.checkWith wb wb.sst.length row c
+
+def Row.checkWith (wb : Workbook) (sstCount : Nat) (row : Row) : Bool :=
+  0 < row.index && row.index ≤ maxRow && row.cells.all (Cell.checkWith wb sstCount row)
   && increasing (row.cells.map (·.ref.col))
+
+def Row.check (wb : Workbook) (row : Row) : Bool := Row.checkWith wb wb.sst.length row
 
 /-- No two in the list overlap, checked pair by pair. -/
 def disjointB : List Range → Bool
@@ -483,25 +593,81 @@ theorem disjointB_sound : ∀ {ms : List Range}, disjointB ms = true →
     simp only [disjointB, Bool.and_eq_true, List.all_eq_true, Bool.not_eq_eq_eq_not, Bool.not_true] at h
     exact List.pairwise_cons.2 ⟨h.1, disjointB_sound h.2⟩
 
+def colsDisjointB : List (Nat × Nat) → Bool
+  | [] => true
+  | c :: cs => cs.all (fun d => !colsOverlap c d) && colsDisjointB cs
+
+theorem colsDisjointB_sound : ∀ {cs : List (Nat × Nat)}, colsDisjointB cs = true →
+    cs.Pairwise (fun a b => colsOverlap a b = false)
+  | [], _ => List.Pairwise.nil
+  | c :: cs, h => by
+    simp only [colsDisjointB, Bool.and_eq_true, List.all_eq_true, Bool.not_eq_eq_eq_not, Bool.not_true] at h
+    exact List.pairwise_cons.2 ⟨h.1, colsDisjointB_sound h.2⟩
+
+/-- The cells of a sheet that hold a value. -/
+def Sheet.valueRefs (s : Sheet) : List CellRef :=
+  (s.rows.flatMap fun r => r.cells.filter (fun c => c.stored != .empty)).map (·.ref)
+
+/-- The two merge rules, pair by pair: every merge against every other, and against every cell. -/
+def Sheet.mergesSlow (s : Sheet) : Bool :=
+  disjointB s.merges && s.merges.all (fun m => s.rows.all fun r => r.cells.all fun c =>
+      !m.contains c.ref || c.ref == m.first || c.stored == .empty)
+
+/-- The two merge rules. Up to 64 merges, pair by pair, which the kernel can run on the
+example. Past that, by sorting the merged cells (`mergesFast`) when there are at most four
+million of them, and pair by pair if that fails, so a file is never refused just for being big. -/
+def Sheet.mergesOk (s : Sheet) : Bool :=
+  if s.merges.length ≤ 64 then s.mergesSlow
+  else ((s.merges.map Range.area).sum ≤ 4000000 && mergesFast s.merges s.valueRefs) || s.mergesSlow
+
+theorem Sheet.mergesSlow_sound {s : Sheet} (h : s.mergesSlow = true) :
+    s.merges.Pairwise (fun a b => a.overlaps b = false) ∧
+    ∀ m ∈ s.merges, ∀ r ∈ s.rows, ∀ c ∈ r.cells,
+      m.contains c.ref = true → c.ref ≠ m.first → c.stored = .empty := by
+  simp only [Sheet.mergesSlow, Bool.and_eq_true, List.all_eq_true] at h
+  refine ⟨disjointB_sound h.1, fun m hm r hr c hc hin hne => ?_⟩
+  have := h.2 m hm r hr c hc
+  simp only [hin, Bool.not_true, Bool.false_or, Bool.or_eq_true, beq_iff_eq] at this
+  rcases this with h | h
+  · exact absurd h hne
+  · exact h
+
+theorem Sheet.mergesOk_sound {s : Sheet} (hv : ∀ m ∈ s.merges, m.Valid) (h : s.mergesOk = true) :
+    s.merges.Pairwise (fun a b => a.overlaps b = false) ∧
+    ∀ m ∈ s.merges, ∀ r ∈ s.rows, ∀ c ∈ r.cells,
+      m.contains c.ref = true → c.ref ≠ m.first → c.stored = .empty := by
+  unfold Sheet.mergesOk at h
+  split at h
+  · exact Sheet.mergesSlow_sound h
+  · rcases Bool.or_eq_true_iff.1 h with h | h
+    · obtain ⟨hd, hh⟩ := mergesFast_sound hv (Bool.and_eq_true_iff.1 h).2
+      refine ⟨hd, fun m hm r hr c hc hin hne => ?_⟩
+      by_cases he : c.stored = .empty
+      · exact he
+      · exact (hh m hm c.ref (List.mem_map.2 ⟨c, List.mem_flatMap.2
+          ⟨r, hr, List.mem_filter.2 ⟨hc, by simpa using he⟩⟩, rfl⟩) hin hne).elim
+    · exact Sheet.mergesSlow_sound h
+
 def Sheet.check (wb : Workbook) (s : Sheet) : Bool :=
   !s.name.toList.isEmpty && utf16Length s.name ≤ 31
   && s.name.toList.all (fun ch => !forbiddenInSheetName.contains ch && xmlChar ch)
   && s.name.toList.head? != some '\'' && s.name.toList.getLast? != some '\''
   && s.key != "history".toList
-  && s.rows.all (Row.check wb) && increasing (s.rows.map (·.index))
-  && (match s.dimension with
-      | some d => s.rows.all fun r => r.cells.all fun c => d.contains c.ref
-      | none => true)
-  && s.merges.all (fun m => decide m.Valid) && disjointB s.merges
-  && s.merges.all (fun m => s.rows.all fun r => r.cells.all fun c =>
-      !m.contains c.ref || c.ref == m.first || c.stored == .empty)
+  && s.rows.all (Row.checkWith wb wb.sst.length) && increasing (s.rows.map (·.index))
+  && s.merges.all (fun m => decide m.Valid) && s.mergesOk
   && s.tables.all Table.shapeOk
   && disjointB (s.tables.map (·.range))
   && s.tables.all (fun t => s.merges.all fun m => !t.range.overlaps m)
   && s.tables.all (Table.headerOk wb.sst s)
-  && s.hyperlinks.all (fun h => h.rid.isSome || h.location.isSome)
   && s.hyperlinks.all (fun h => decide h.ref.Valid)
   && s.hyperlinks.all (fun h => match h.rid with | some id => s.relIds.contains id | none => true)
+  && s.condFormats.all (fun c => sqrefOk c.sqref && c.dxfIds.all (· < wb.dxfCount))
+  && s.validations.all (fun v => sqrefOk v.sqref)
+  && s.comments.all (fun c => (match parseA1 c.ref with | some r => decide r.Valid | none => false)
+      && c.author < s.authors)
+  && s.shared.all (SharedFormula.hasMaster s.shared)
+  && s.cols.all (fun c => 1 ≤ c.1 && c.1 ≤ c.2 && c.2 ≤ maxCol)
+  && colsDisjointB s.cols
 
 def Workbook.check (wb : Workbook) : Bool :=
   !wb.sheets.isEmpty && wb.sheets.all (Sheet.check wb)
@@ -515,12 +681,14 @@ def Workbook.check (wb : Workbook) : Bool :=
   && Package.noDups (wb.names.map DefinedName.key)
   && wb.names.all (fun d => match d.scope with | some i => i < wb.sheets.length | none => true)
   && wb.names.all (fun d => textOk d.formula)
+  && wb.xfRefs.all (fun x => x.1 < wb.fontCount && x.2.1 < wb.fillCount && x.2.2 < wb.borderCount)
+  && (wb.xfRefs.isEmpty || wb.xfRefs.length == wb.styleCount)
   && Package.noDups (wb.numFmts.map (·.1))
   && (wb.xfFormats.isEmpty || wb.xfFormats.length == wb.styleCount)
   && wb.xfFormats.all (fun id => id < 164 || (wb.numFmts.map (·.1)).contains id)
 
 theorem Cell.check_sound {wb row c} (h : Cell.check wb row c = true) : c.WellFormed wb row := by
-  simp only [Cell.check, Bool.and_eq_true, beq_iff_eq, decide_eq_true_eq] at h
+  simp only [Cell.check, Cell.checkWith, Bool.and_eq_true, beq_iff_eq, decide_eq_true_eq] at h
   obtain ⟨⟨⟨⟨⟨⟨h1, h2⟩, h3⟩, h4⟩, h5⟩, h6⟩, h7⟩ := h
   refine ⟨h1, h2, h3, ?_, h5, ?_, ?_, ?_, ?_, ?_, ?_⟩
   · intro i hi
@@ -546,14 +714,15 @@ theorem Cell.check_sound {wb row c} (h : Cell.check wb row c = true) : c.WellFor
     exact h7
 
 theorem Row.check_sound {wb row} (h : Row.check wb row = true) : row.WellFormed wb := by
-  simp only [Row.check, Bool.and_eq_true, decide_eq_true_eq, List.all_eq_true] at h
+  simp only [Row.check, Row.checkWith, Bool.and_eq_true, decide_eq_true_eq, List.all_eq_true] at h
   obtain ⟨⟨⟨h1, h2⟩, h3⟩, h4⟩ := h
   exact ⟨h1, h2, fun c hc => Cell.check_sound (h3 c hc), increasing_sound h4⟩
 
 theorem Sheet.check_sound {wb s} (h : Sheet.check wb s = true) : s.WellFormed wb := by
   simp only [Sheet.check, Bool.and_eq_true, decide_eq_true_eq, List.all_eq_true,
     List.isEmpty_eq_false_iff, Bool.not_eq_eq_eq_not, Bool.not_true, bne_iff_ne, ne_eq] at h
-  obtain ⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨h1, h2⟩, h3⟩, hq1⟩, hq2⟩, hh⟩, h4⟩, h5⟩, hd⟩, hm⟩, hmd⟩, hme⟩, ht1⟩, ht2⟩, ht3⟩, ht4⟩, hl1⟩, hl2⟩, hl3⟩ := h
+  obtain ⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨h1, h2⟩, h3⟩, hq1⟩, hq2⟩, hh⟩, h4⟩, h5⟩, hm⟩, hmo⟩, ht1⟩, ht2⟩, ht3⟩, ht4⟩, hl2⟩, hl3⟩,
+    hcf⟩, hdv⟩, hcm⟩, hsh⟩, hco⟩, hcd⟩ := h
   exact {
     name_nonempty := h1
     name_short := h2
@@ -566,41 +735,46 @@ theorem Sheet.check_sound {wb s} (h : Sheet.check wb s = true) : s.WellFormed wb
     name_reserved := hh
     rows := fun r hr => Row.check_sound (h4 r hr)
     sorted := increasing_sound h5
-    dimension_covers := fun d hdim r hr c hc => by
-      rw [hdim] at hd
-      simp only [List.all_eq_true] at hd
-      exact hd r hr c hc
     merges_valid := fun m hmem => hm m hmem
-    merges_disjoint := disjointB_sound hmd
-    merged_hidden_empty := fun m hm' r hr c hc hin hne => by
-      have := hme m hm' r hr c hc
-      simp only [hin, Bool.not_true, Bool.false_or, Bool.or_eq_true, beq_iff_eq] at this
-      rcases this with h | h
-      · exact absurd h hne
-      · exact h
+    merges_disjoint := (Sheet.mergesOk_sound hm hmo).1
+    merged_hidden_empty := (Sheet.mergesOk_sound hm hmo).2
     tables_shape := ht1
     tables_disjoint := disjointB_sound ht2
     tables_unmerged := fun t ht m hm => by simpa using ht3 t ht m hm
     tables_header := ht4
-    links_target := fun l hl => by simpa [Bool.or_eq_true] using hl1 l hl
     links_ref := fun l hl => by simpa using hl2 l hl
     links_rel := fun l hl id hid => by
       have := hl3 l hl
       rw [hid] at this
-      simpa using this }
+      simpa using this
+    cf_ok := fun c hc => by
+      have := hcf c hc
+      exact ⟨this.1, fun d hd => by simpa using this.2 d hd⟩
+    dv_ok := hdv
+    comments_ok := fun c hc => hcm c hc
+    formulas_shared_ok := hsh
+    cols_ok := fun c hc => by
+      have := hco c hc
+      omega
+    cols_disjoint := colsDisjointB_sound hcd }
 
 /-- **The checker is sound**: a workbook it accepts follows every rule. -/
 theorem Workbook.check_sound {wb : Workbook} (h : wb.check = true) : wb.WellFormed := by
   simp only [Workbook.check, Bool.and_eq_true, decide_eq_true_eq, List.all_eq_true,
     Bool.not_eq_true', List.isEmpty_eq_false_iff] at h
-  obtain ⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨h1, h2⟩, h3⟩, h4⟩, h5⟩, hv⟩, htn⟩, htu⟩, hn1⟩, hn2⟩, hn3⟩, hn4⟩, h6⟩, h7⟩, h8⟩ := h
+  obtain ⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨h1, h2⟩, h3⟩, h4⟩, h5⟩, hv⟩, htn⟩, htu⟩, hn1⟩, hn2⟩, hn3⟩, hn4⟩, hx1⟩, hx2⟩, h6⟩, h7⟩, h8⟩ := h
   refine ⟨h1, fun s hs => Sheet.check_sound (h2 s hs), Package.noDups_sound h3, h4, h5,
     by simpa [List.any_eq_true] using hv, fun s hs t ht => htn s hs t ht, Package.noDups_sound htu,
-    hn1, Package.noDups_sound hn2, ?_, hn4, Package.noDups_sound h6, ?_, ?_⟩
+    hn1, Package.noDups_sound hn2, ?_, hn4, ?_, ?_, Package.noDups_sound h6, ?_, ?_⟩
   · intro d hd i hi
     have := hn3 d hd
     rw [hi] at this
     simpa using this
+  · intro x hx
+    have := hx1 x hx
+    exact ⟨this.1.1, this.1.2, this.2⟩
+  · simp only [Bool.or_eq_true, List.isEmpty_iff, beq_iff_eq] at hx2
+    exact hx2
   · simp only [Bool.or_eq_true, List.isEmpty_iff, beq_iff_eq] at h7
     exact h7
   · intro id hid

@@ -27,7 +27,6 @@ W13-same-cell-twice          FAIL   ok        DIFFERS   DIFFERS   DIFFERS
                                     openpyxl: Limits!A1: read 2, model '1'
                                     calamine: Limits!A1: read 2.0, model '1'
                                     sheetjs: Limits!A1: read 2, model '1'
-W14-dimension-too-small      FAIL   ok        ok        ok        ok       
 W15-merges-overlap           FAIL   ok        DIFFERS   ok        ok       
                                     openpyxl: Limits!B1: read None, model 'Value'
 W16-merge-backwards          FAIL   ok        REJECTS   ok        ok       
@@ -53,7 +52,12 @@ W28-table-over-merge         FAIL   ok        ok        ok        ok
 W29-table-name-clash         FAIL   ok        ok        ok        ok       
 W30-table-columns-twice      FAIL   ok        ok        ok        ok       
 W31-hyperlink-dangling       FAIL   ok        REJECTS   ok        ok       
-W32-hyperlink-nowhere        FAIL   ok        ok        ok        ok       
+W33-font-dangling            FAIL   ok        ok        ok        ok       
+W34-cf-dxf-dangling          FAIL   ok        REJECTS   ok        ok       
+W35-dv-bad-range             FAIL   ok        REJECTS   ok        ok       
+W36-comment-author           FAIL   ok        REJECTS   ok        ok       
+W37-shared-no-master         FAIL   ok        ok        ok        ok       
+W38-cols-overlap             FAIL   ok        ok        ok        ok       
 
 == gap ==
 case                         ours   expat     openpyxl  calamine  sheetjs  
@@ -74,6 +78,7 @@ G14-int-10^400               FAIL   ok        ok        DIFFERS   DIFFERS
 == probe ==
 case                         ours   expat     openpyxl  calamine  sheetjs  
 P05-orphan-part              pass   ok        ok        ok        ok       
+W14-dimension-too-small      pass   ok        ok        ok        ok       
 G04-spaces-inline            pass   ok        ok        ok        ok       
 G05-spaces-shared            pass   ok        ok        ok        ok       
 G06-crlf-shared              pass   ok        ok        ok        ok       
@@ -99,9 +104,25 @@ G26-one-hidden               pass   ok        ok        ok        ok
 G27-names                    pass   ok        ok        ok        ok       
 G28-table                    pass   ok        ok        ok        ok       
 G29-hyperlinks               pass   ok        ok        ok        ok       
+W32-hyperlink-nowhere        pass   ok        ok        ok        ok       
+G30-more-content             pass   ok        ok        ok        ok       
 G22-decimals                 pass   ok        ok        DIFFERS   ok       
                                     calamine: Probe!D1: read None, model '#N/A'
 G23-formula-cached           pass   ok        ok        ok        ok       
+G31-xstring-shared           pass   ok        DIFFERS   DIFFERS   ok       
+                                    openpyxl: Probe!A1: read '_x0041_ and _', model '_x0041_ and _x005F_'
+                                    calamine: Probe!A1: read '_x005F_x0041_ and _x005F_x005F_', model '_x0041_ and _x005F_'
+G32-xstring-inline           pass   ok        DIFFERS   DIFFERS   ok       
+                                    openpyxl: Probe!A1: read 'a_x005F_x000a_b', model 'a_x000a_b'
+                                    calamine: Probe!A1: read 'a_x005F_x000a_b', model 'a_x000a_b'
+G33-xstring-name             pass   ok        DIFFERS   DIFFERS   ok       
+                                    openpyxl: sheet names ['_x005F_x0041_', 'Columns']... != ['_x0041_', 'Columns']...
+                                    calamine: sheet names ['_x005F_x0041_', 'Columns']... != ['_x0041_', 'Columns']...
+G34-xstring-result           pass   ok        DIFFERS   DIFFERS   ok       
+                                    openpyxl: Probe!A1: read '_x005F_x0042_', model '_x0042_'
+                                    calamine: Probe!A1: read '_x005F_x0042_', model '_x0042_'
+G35-x005F-plain              pass   ok        DIFFERS   ok        ok       
+                                    openpyxl: Probe!A1: read 'ab', model 'ax005F_b'
 
 == fuzz: 300 random well-formed workbooks ==
 expat     agrees on 300/300
