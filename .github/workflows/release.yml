@@ -1,0 +1,51 @@
+name: release
+on:
+  push:
+    tags: ["v*"]
+permissions:
+  contents: write
+jobs:
+  build:
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            name: linux-x64
+          - os: macos-14
+            name: macos-arm64
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: leanprover/lean-action@v1
+        with:
+          build: true
+          test: false
+          lint: false
+      - name: Smoke test
+        run: |
+          .lake/build/bin/xlsxlean write out/example.xlsx
+          .lake/build/bin/xlsxlean check out/example.xlsx
+      - name: Package
+        run: |
+          mkdir -p dist/xlsxlean-${{ matrix.name }}
+          cp .lake/build/bin/xlsxlean README.md LICENSE dist/xlsxlean-${{ matrix.name }}/
+          tar czf dist/xlsxlean-${{ matrix.name }}.tar.gz -C dist xlsxlean-${{ matrix.name }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: xlsxlean-${{ matrix.name }}
+          path: dist/xlsxlean-${{ matrix.name }}.tar.gz
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+      - name: Publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "${{ github.ref_name }}" dist/*.tar.gz --repo "${{ github.repository }}" \
+            --title "xlsx-lean ${{ github.ref_name }}" \
+            --notes "xlsxlean check: the XLSX spec's proved checkers, for your own files. Unpack and run ./xlsxlean check FILE.xlsx. The macOS binary is not notarized: run xattr -d com.apple.quarantine xlsxlean once."

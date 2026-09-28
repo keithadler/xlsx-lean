@@ -4,7 +4,7 @@
 
 > **Every workbook, with any number of sheets, lays out as a well-formed package**, and follows the SpreadsheetML rules on top of that. **And the ZIP the writer produces reads back to exactly the entries written.**
 
-`xlsxgen check` reads any real `.xlsx` (compressed with lean-zip's verified DEFLATE decoder, or stored), builds the same model, runs the proved checkers on it, and says which rule a file breaks and where. It checked all 66 files in calamine's test suite in under three seconds.
+`xlsxlean check` reads any real `.xlsx` (compressed with lean-zip's verified DEFLATE decoder, or stored), builds the same model, runs the proved checkers on it, and says which rule a file breaks and where. It checked all 66 files in calamine's test suite in under three seconds.
 
 The spec was attacked with 342 hostile files and four independent readers, and then with real files from Excel, LibreOffice, openpyxl and SheetJS. That turned up a crash in one reader, silent data loss in another, four gaps in the spec, and one rule stricter than the standard. All are fixed and proved.
 
@@ -14,8 +14,10 @@ As far as I could find, nobody has formalized XLSX before. The nearest work: [Et
 
 ## Check your own files
 
+Download `xlsxlean` for macOS (Apple Silicon) or Linux from the [releases](https://github.com/keithadler/xlsx-lean/releases), or build it (below). Then:
+
 ```bash
-lake exe xlsxgen check empty_s_attribute.xlsx
+./xlsxlean check empty_s_attribute.xlsx
 ```
 
 This is a real file from calamine's test suite:
@@ -59,7 +61,7 @@ Plain Lean 4 (v4.35.0-rc2) plus [lean-zip](https://github.com/kim-em/lean-zip): 
 | [`Workbook.toPackage_conforms`](Xlsx/Build.lean#L351) | The main document is typed as a workbook, and there is one worksheet relationship per sheet, each landing on a part typed as a worksheet. |
 | [`Workbook.toPackage_noOrphans`](Xlsx/Build.lean#L282) | Every part can be reached by following relationships from the package. |
 | [`Archive.readSpec_archive`](Xlsx/ZipProof.lean#L134) | For any list of entries that fits a plain ZIP, reading the archive as a ZIP reader does (end record, central directory, each local header) gives back every entry's name and bytes, in order. |
-| [`Package.check_sound`](Xlsx/Package.lean#L285), [`conformsCheck_sound`](Xlsx/Build.lean#L312), [`Workbook.check_sound`](Xlsx/Workbook.lean#L328) | The checkers that run are sound: a package or workbook they accept follows every rule. `xlsxgen check` uses these. |
+| [`Package.check_sound`](Xlsx/Package.lean#L285), [`conformsCheck_sound`](Xlsx/Build.lean#L312), [`Workbook.check_sound`](Xlsx/Workbook.lean#L328) | The checkers that run are sound: a package or workbook they accept follows every rule. `xlsxlean check` uses these. |
 | [`Cell.WellFormed.resolves`](Xlsx/Workbook.lean#L184) | In a well-formed workbook every cell has a value: no shared string index dangles. |
 | [`Sheet.WellFormed.refs_nodup`](Xlsx/Workbook.lean#L231) | No two cells of a well-formed sheet have the same reference, so "the cell at B7" always means one cell. |
 | [`decodeCol_encodeCol`](Xlsx/CellRef.lean#L61), [`encodeCol_decodeCol`](Xlsx/CellRef.lean#L72) | Column names (`A` … `Z`, `AA` …) are *bijective* base 26: every number has one name and every string of capitals is some column. |
@@ -79,7 +81,7 @@ Cells can hold integers, decimals (kept exactly as written, `m × 10^e`), text (
 
 ## The adversarial test
 
-`lake exe xlsxgen lab out/lab` writes 342 files with the same writer as the example, and records our verdict and the model's value for every cell. [`tools/differential.py`](tools/differential.py) then reads every file with four readers from independent code bases: a strict XML parser (expat), openpyxl (Python), calamine (Rust) and SheetJS (JavaScript). It compares each against the model, cell by cell. The corpus has three kinds of file:
+`lake exe xlsxlean lab out/lab` writes 342 files with the same writer as the example, and records our verdict and the model's value for every cell. [`tools/differential.py`](tools/differential.py) then reads every file with four readers from independent code bases: a strict XML parser (expat), openpyxl (Python), calamine (Rust) and SheetJS (JavaScript). It compares each against the model, cell by cell. The corpus has three kinds of file:
 
 - **21 broken files**, each breaking one rule on purpose. Our checkers must reject every one, and they do.
 - **21 probes** aimed where a spec like this is usually too weak.
@@ -149,19 +151,19 @@ lake build
 Check files:
 
 ```bash
-lake exe xlsxgen check --json a.xlsx b.xlsx
+lake exe xlsxlean check --json a.xlsx b.xlsx
 ```
 
 Write the example workbook, and open it in any spreadsheet app:
 
 ```bash
-lake exe xlsxgen out/example.xlsx
+lake exe xlsxlean write out/example.xlsx
 ```
 
 Write the adversarial corpus. This fails if any verdict is not the expected one, if any valid file does not read back identical to its model, or if the report of where disagrees with the checkers:
 
 ```bash
-lake exe xlsxgen lab out/lab 300
+lake exe xlsxlean lab out/lab 300
 ```
 
 Read the corpus with the four readers:
@@ -178,7 +180,7 @@ To see the pictures, open the folder in [Lean Studio](https://github.com/keithad
 
 ## What is not proved
 
-- **The readers.** The XML parser and the ByteArray ZIP reader behind `xlsxgen check` are ordinary code. What is proved is what the checkers conclude about the model the reader builds, and that the writer's ZIP reads back correctly (`readSpec_archive`, about the specification reader that follows the same steps). The production reader is tested: every one of the 312 valid corpus files reads back identical to the model it was written from.
+- **The readers.** The XML parser and the ByteArray ZIP reader behind `xlsxlean check` are ordinary code. What is proved is what the checkers conclude about the model the reader builds, and that the writer's ZIP reads back correctly (`readSpec_archive`, about the specification reader that follows the same steps). The production reader is tested: every one of the 312 valid corpus files reads back identical to the model it was written from.
 - **DEFLATE and CRC-32** come from lean-zip, where they are proved; the reader uses the same decoder the round-trip theorem is about.
 - **The XML text.** The writer renders the model to XML and nothing about that step is proved; four readers check it on every corpus file.
 - **The model is a subset of SpreadsheetML.** It does not describe merged cells, dates as dates (they are numbers with a date format), number formats, rich text formatting, tables, charts, drawings, defined names or comments; the reader lists them as not modeled. Formulas are kept as written, not evaluated. Shared formulas are not expanded.

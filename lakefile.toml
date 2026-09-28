@@ -1,12 +1,12 @@
 name = "xlsx"
 version = "0.1.0"
-defaultTargets = ["Xlsx", "xlsxgen"]
+defaultTargets = ["Xlsx", "xlsxlean"]
 
 [[lean_lib]]
 name = "Xlsx"
 
 [[lean_exe]]
-name = "xlsxgen"
+name = "xlsxlean"
 root = "Main"
 
 [[lean_lib]]

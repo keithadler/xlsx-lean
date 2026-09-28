@@ -4,7 +4,7 @@ import Xlsx.Read.Report
 
 open Lean Xlsx Lab
 
-/-- Write the adversarial corpus and its manifest: `xlsxgen lab <dir> [fuzz count]`. -/
+/-- Write the adversarial corpus and its manifest: `xlsxlean lab <dir> [fuzz count]`. -/
 def lab (args : List String) : IO UInt32 := do
   let dir : System.FilePath := args.headD "out/lab"
   let n := (args.drop 1).head?.bind String.toNat? |>.getD 300
@@ -46,7 +46,7 @@ def lab (args : List String) : IO UInt32 := do
   for m in mismatches.toList.take 20 do IO.eprintln s!"  {m}"
   return if wrong.isEmpty && mismatches.isEmpty then 0 else 1
 
-/-- Write the example workbook as a real `.xlsx` file: `xlsxgen [path]`. -/
+/-- Write the example workbook as a real `.xlsx` file: `xlsxlean write [path]`. -/
 def example_ (args : List String) : IO UInt32 := do
   let path := args.headD "out/example.xlsx"
   let wb := Example.workbook
@@ -61,7 +61,7 @@ def example_ (args : List String) : IO UInt32 := do
     IO.println s!"  {n} ({s.utf8ByteSize} bytes)"
   return 0
 
-/-- Check real files: `xlsxgen check [--json] file.xlsx ...`. Exit 1 if any breaks the spec. -/
+/-- Check real files: `xlsxlean check [--json] file.xlsx ...`. Exit 1 if any breaks the spec. -/
 def check (args : List String) : IO UInt32 := do
   let json := args.contains "--json"
   let files := args.filter (· != "--json")
@@ -80,8 +80,20 @@ def check (args : List String) : IO UInt32 := do
   if json then IO.println (Json.arr out).compress
   return if bad == 0 then 0 else 1
 
+def usage : String := "xlsxlean: the XLSX format as a Lean proof, and a checker for real files.
+
+  xlsxlean check [--json] FILE.xlsx ...   check files against the spec; exit 1 if any breaks it
+  xlsxlean write [PATH]                   write the example workbook (default out/example.xlsx)
+  xlsxlean lab [DIR] [N]                  write the adversarial corpus with N random workbooks
+  xlsxlean help                           this
+
+The verdicts come from checkers proved sound in Lean: https://github.com/keithadler/xlsx-lean
+"
+
 def main (args : List String) : IO UInt32 :=
   match args with
   | "lab" :: rest => lab rest
   | "check" :: rest => check rest
-  | rest => example_ rest
+  | "write" :: rest => example_ rest
+  | ["help"] | ["--help"] | ["-h"] | [] => do IO.print usage; return 0
+  | other => do IO.eprintln s!"unknown command {other.headD ""}\n"; IO.eprint usage; return 2

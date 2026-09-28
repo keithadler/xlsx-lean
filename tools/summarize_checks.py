@@ -1,6 +1,6 @@
-"""Summarize `xlsxgen check --json` output, and optionally insist on the numbers.
+"""Summarize `xlsxlean check --json` output, and optionally insist on the numbers.
 
-    xlsxgen check --json tests/*.xlsx > checks.json
+    xlsxlean check --json tests/*.xlsx > checks.json
     python tools/summarize_checks.py checks.json --expect-files 66 --expect-unreadable 2 --expect-pass 62
 """
 import argparse, collections, json, os, sys
