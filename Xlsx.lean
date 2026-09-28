@@ -5,6 +5,7 @@ import Xlsx.Build
 import Xlsx.Xml
 import Xlsx.Zip
 import Xlsx.Example
+import Xlsx.Visuals.Data
 import Xlsx.Visuals
 import Xlsx.Read.Xml
 import Xlsx.Read.Zip

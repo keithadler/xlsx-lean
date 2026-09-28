@@ -1,4 +1,5 @@
-import Xlsx
+import Xlsx.Zip
+import Xlsx.Visuals.Data
 import Lab.Adversarial
 import Xlsx.Read.Report
 
@@ -61,8 +62,24 @@ def example_ (args : List String) : IO UInt32 := do
     IO.println s!"  {n} ({s.utf8ByteSize} bytes)"
   return 0
 
+/-- Everything the infoview draws about one file: `xlsxlean check --widget file.xlsx`. -/
+def widgetJson (f : String) : IO UInt32 := do
+  match ← Read.loadFile f with
+  | .error e => IO.println (Json.mkObj [("report", Json.mkObj [("path", f), ("unreadable", e)])]).compress; return 1
+  | .ok l =>
+    let v := l.verdict
+    let ok := v.ok && (l.notes.filter (·.severity == .error)).isEmpty
+    let report := match Visuals.checkJson f l with
+      | .obj kvs => Json.obj (kvs.insert "ok" (toJson ok))
+      | j => j
+    IO.println (Json.mkObj [("report", report),
+      ("package", Visuals.packageJson l.pkg f l.wb.sheets.length),
+      ("workbook", Visuals.workbookJsonCapped l.wb 400)]).compress
+    return if ok then 0 else 1
+
 /-- Check real files: `xlsxlean check [--json] file.xlsx ...`. Exit 1 if any breaks the spec. -/
 def check (args : List String) : IO UInt32 := do
+  if let ["--widget", f] := args then return ← widgetJson f
   let json := args.contains "--json"
   let files := args.filter (· != "--json")
   let mut bad := 0

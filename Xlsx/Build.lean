@@ -145,7 +145,7 @@ theorem find?_map_const {α β} {f : Nat → α} {v : β} {q : α × β → Bool
   | [], h => by simp at h
   | a :: l, h => by
     by_cases ha : q (f a, v) = true
-    · simp [List.find?, ha]
+    · simp [ha]
     · simp only [List.map_cons, List.find?, Bool.not_eq_true] at ha ⊢
       rw [ha]
       obtain ⟨x, hx, hq⟩ := h

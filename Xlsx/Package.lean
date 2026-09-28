@@ -283,7 +283,7 @@ theorem found_reachable {p : Package} : ∀ k, ∀ b ∈ p.found k, p.Reachable 
 
 /-- **The checker is sound**: a package it accepts follows every rule. -/
 theorem check_sound {p : Package} (h : p.check = true) : p.WellFormed := by
-  simp only [check, Bool.and_eq_true, List.all_eq_true, beq_iff_eq, List.contains_iff_mem] at h
+  simp only [check, Bool.and_eq_true, List.all_eq_true, beq_iff_eq] at h
   obtain ⟨⟨⟨hnd, hty⟩, hrels⟩, hmain⟩ := h
   refine ⟨noDups_sound hnd, hty, ?_, ?_, ?_, hmain⟩
   · intro s rs hmem n hs

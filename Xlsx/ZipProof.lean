@@ -119,9 +119,9 @@ theorem readCentral_suffix (es : List Entry) (hf : Fits es) :
     obtain ⟨h1, h2, h3, h4, h5, h6, h7, h8, h9, h10, h11⟩ :=
       readOne hcen hloc (hf.names e hmem) hsize hoff
     simp only [List.length_cons, readCentral]
-    rw [if_neg (by rw [h1]; decide)]
+    rw [ite_eq_right (by rw [h1]; decide)]
     simp only [h2]
-    rw [if_neg (by rw [h3]; decide)]
+    rw [ite_eq_right (by rw [h3]; decide)]
     simp only [h4, h5, h6, h7, h8, h9, h10, Nat.add_zero, h11]
     have := ih (done ++ [e]) (by simp [hes])
     rw [centrals_append] at this
@@ -145,7 +145,7 @@ theorem readSpec_archive (es : List Entry) (hf : Fits es) :
         ++ le32 (locals es).length ++ le16 0)
       (i := (locals es).length + (centrals 0 es).length) (k := 4)
       (by simp [bytes, eocd]) (by simp) rfl]
-  rw [if_neg (by decide)]
+  rw [ite_eq_right (by decide)]
   rw [rd_at (pre := locals es ++ centrals 0 es ++ (le32 0x06054b50 ++ le16 0 ++ le16 0 ++ le16 es.length))
       (bs := le16 es.length)
       (post := le32 (centrals 0 es).length ++ le32 (locals es).length ++ le16 0)

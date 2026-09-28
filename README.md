@@ -53,7 +53,7 @@ The verdict comes from the checkers that are proved sound. The "where" list is a
 
 ## What is proved
 
-Plain Lean 4 (v4.35.0-rc2) plus [lean-zip](https://github.com/kim-em/lean-zip): no Mathlib, no `sorry`, no `native_decide`. The main theorems rest on Lean's three standard axioms (`propext`, `Classical.choice`, `Quot.sound`), and the concrete limits such as `colName_maxCol` on none at all. [Tenet](https://github.com/keithadler/tenet), an independent implementation of Lean's kernel, re-checks every declaration: **1,560 checked, 0 failed.**
+Plain Lean 4 (v4.35.0-rc2) plus [lean-zip](https://github.com/kim-em/lean-zip): no Mathlib, no `sorry`, no `native_decide`. The main theorems rest on Lean's three standard axioms (`propext`, `Classical.choice`, `Quot.sound`), and the concrete limits such as `colName_maxCol` on none at all. [Tenet](https://github.com/keithadler/tenet), an independent implementation of Lean's kernel, re-checks every declaration: **1,723 checked, 0 failed.**
 
 | Theorem | What it says |
 |---|---|
@@ -126,6 +126,12 @@ The corpus also caught a bug in the XML writer, which is outside the proofs: a c
 
 With spec v2, all 342 verdicts are as expected: the 21 broken files and 9 more the first spec let through are rejected, and all 312 valid files are accepted. Across the 300 random workbooks, expat, openpyxl and SheetJS agree with the model on every cell. calamine's only disagreements are the empty strings above.
 
+## Any spreadsheet, in Lean Studio
+
+Put `#xlsx_check "your.xlsx"` in a Lean file (there is a `Try.lean` ready) and put the cursor on it. The compiled reader reads the workbook, the proved checkers judge it, and the infoview draws the verdict, where the rules break, the package and the sheets.
+
+![#xlsx_check on a file with a value hidden under a merged range](docs/images/check-value-under-merge.png)
+
 ## Pictures, in Lean Studio
 
 `Xlsx/Visuals.lean` has three infoview widgets. Put the cursor on a `#widget` line and Lean Studio's **Infoview** tab draws it (VS Code's infoview works too). The JavaScript only draws: the data comes from the functions the theorems are about, and the controls call back into Lean over RPC.
@@ -144,9 +150,9 @@ With spec v2, all 342 verdicts are as expected: the 21 broken files and 9 more t
 
 **Tenet's verdicts** on each declaration, in the gutter and the Tenet panel, after **Build**:
 
-![Tenet checked 593 declarations: 593 verified, 0 resting on sorry or an axiom, 0 rejected](docs/images/tenet-verdicts.png)
+![Tenet checked 955 declarations in the IDE: 955 verified, 0 resting on sorry or an axiom, 0 rejected](docs/images/tenet-verdicts.png)
 
-**The Project Map:** 533 declarations and 2,202 uses between them, every one fully proved.
+**The Project Map:** every declaration of the project and what it uses, every one fully proved.
 
 ![The project map](docs/images/project-map.png)
 
@@ -209,7 +215,8 @@ To see the pictures, open the folder in [Lean Studio](https://github.com/keithad
 | `Xlsx/Xml.lean` | The XML writer (not verified) |
 | `Xlsx/Zip.lean`, `Xlsx/ZipProof.lean` | The ZIP writer and the proof that it reads back |
 | `Xlsx/Read/` | The reader: ZIP (with lean-zip), XML, the model, the report |
-| `Xlsx/Visuals.lean`, `widgets/` | The infoview widgets |
+| `Xlsx/Visuals.lean`, `Xlsx/Visuals/Data.lean`, `widgets/` | The infoview widgets and `#xlsx_check` |
+| `Try.lean`, `samples/` | `#xlsx_check` on sample files; add your own |
 | `Lab/Adversarial.lean` | The adversarial corpus |
 | `tools/differential.py` | Reads the corpus with four readers and compares with the model |
 | `docs/adversarial/` | The last run's report and results |

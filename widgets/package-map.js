@@ -112,7 +112,7 @@ function Graph({ pkg, hover, setHover }) {
       const isPkg = p.entry === 'package';
       const out = [h(Node, {
         key: p.entry, x, y, w: W, hgt: H, role: p.role,
-        title: isPkg ? 'example.xlsx' : fileName(p.entry),
+        title: isPkg ? fileName(pkg.title.split(' ')[0].split(':')[0]).slice(0, 22) || 'package' : fileName(p.entry),
         sub: isPkg ? 'the ZIP archive itself' : '/' + folder(p.entry),
         active: hover === p.entry, dim: dim(p.entry),
         onEnter: () => setHover(p.entry), onLeave: () => setHover(null) })];

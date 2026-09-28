@@ -95,10 +95,11 @@ export default function SheetView(props) {
         props.check ? '✓ Workbook.check = true, so Workbook.WellFormed' : '✗ Workbook.check = false')),
     h('div', { style: { display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'flex-start' } },
       h('div', { style: { ...box, flex: '1 1 440px', minWidth: 0 } },
-        h('div', { style: { display: 'flex', justifyContent: 'space-between', fontSize: 11, marginBottom: 8, ...muted } },
-          h('span', { style: { fontFamily: mono } }, '/' + sheet.entry
-            + (sheet.dimension ? '   dimension ' + sheet.dimension : '')
-            + ((sheet.merges || []).length ? '   merged ' + sheet.merges.map(m => m.ref).join(', ') : '')),
+        h('div', { style: { display: 'flex', justifyContent: 'space-between', fontSize: 11, marginBottom: 8, gap: 12, flexWrap: 'wrap', ...muted } },
+          h('span', { style: { fontFamily: mono } }, '/' + sheet.entry,
+            sheet.dimension || (sheet.merges || []).length ? h('div', { style: { marginTop: 2 } },
+              (sheet.dimension ? 'dimension ' + sheet.dimension : '')
+              + ((sheet.merges || []).length ? '   merged ' + sheet.merges.map(m => m.ref).join(', ') : '')) : null),
           h('span', null, Object.entries(counts).map(([k, v]) => `${v} ${KIND[k].label}`).join(' · '))),
         h('div', { style: { overflowX: 'auto' }, onMouseLeave: () => setSstHover(null) }, h(Grid, { sheet, sel, setSel, sstHover })),
         h('div', { style: { display: 'flex', gap: 2, marginTop: 8, borderTop: `1px solid ${grid}` } },

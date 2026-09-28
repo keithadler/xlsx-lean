@@ -295,7 +295,7 @@ theorem Sheet.WellFormed.merge_unique {wb : Workbook} {s : Sheet} (h : s.WellFor
         have := hp.1 b hb
         rw [Range.overlaps_of_contains hm hbc] at this
         cases this
-      simp [List.filter_cons, hm, hrest]
+      simp [hm, hrest]
     · simp only [List.filter_cons, hm, Bool.false_eq_true, ite_false]
       exact ih hp.2
 
