@@ -156,7 +156,8 @@ def richText (n : Node) : String :=
 
 def worksheetKnown : List String :=
   ["sheetPr", "dimension", "sheetViews", "sheetFormatPr", "cols", "sheetData", "pageMargins",
-   "pageSetup", "headerFooter", "printOptions", "sheetCalcPr", "extLst", "mergeCells", "tableParts"]
+   "pageSetup", "headerFooter", "printOptions", "sheetCalcPr", "extLst", "mergeCells", "tableParts",
+   "hyperlinks"]
 
 def parsePart (notes : Array Note) (name : String) (data : ByteArray) : Option Node × Array Note :=
   match parse data with
@@ -259,7 +260,8 @@ def load (entries : Array ZipEntry) : Loaded := Id.run do
           for r in root.childrenNamed "Relationship" do
             let id := (r.attr? "Id").getD ""
             if r.attr? "TargetMode" == some "External" then
-              notes := notes.push ⟨.info, name, s!"{id}: external target, not a part"⟩
+              let ty := relTypeOf ((r.attr? "Type").getD "")
+              rs := rs ++ [Rel.mk id ty ⟨[], (r.attr? "Target").getD "", []⟩ false true]
               continue
             match targetOf src.dir ((r.attr? "Target").getD "") with
             | some (target, absolute) =>
@@ -358,7 +360,11 @@ def load (entries : Array ZipEntry) : Loaded := Id.run do
                             let cols := (((troot.child? "tableColumns").map (·.childrenNamed "tableColumn")).getD #[]).toList.map
                               fun c => (c.attr? "name").getD ""
                             tables := tables ++ [Table.mk tname range header cols]
-                  sheets := sheets ++ [{ sheet with state, tables }]
+                  let hyperlinks : List Hyperlink := (((root.child? "hyperlinks").map (·.childrenNamed "hyperlink")).getD #[]).toList.filterMap fun hl =>
+                    ((hl.attr? "ref").bind parseRange).map fun ref =>
+                      { ref, rid := hl.attr? "id", location := hl.attr? "location" }
+                  let relIds := sheetRels.map (·.id)
+                  sheets := sheets ++ [{ sheet with state, tables, hyperlinks, relIds }]
                   sheetEntries := sheetEntries.push (sname, target.entryName)
   | [] => notes := notes.push ⟨.error, "_rels/.rels", "no officeDocument relationship"⟩
   | _ => notes := notes.push ⟨.error, "_rels/.rels", "more than one officeDocument relationship"⟩

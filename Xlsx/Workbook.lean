@@ -89,6 +89,14 @@ structure Table where
   columns : List String
   deriving DecidableEq, Repr
 
+/-- `<hyperlink ref="A2" r:id="rId3"/>` (to an external address, through the sheet's
+relationships) or `<hyperlink ref="A3" location="Other!B2"/>` (inside the workbook). -/
+structure Hyperlink where
+  ref : Range
+  rid : Option String := none
+  location : Option String := none
+  deriving DecidableEq, Repr
+
 structure Sheet where
   name : String
   rows : List Row
@@ -98,6 +106,9 @@ structure Sheet where
   merges : List Range := []
   state : SheetState := .visible
   tables : List Table := []
+  hyperlinks : List Hyperlink := []
+  /-- The relationship ids the sheet's own `.rels` part declares. -/
+  relIds : List String := []
   deriving DecidableEq, Repr
 
 /-- `<definedName name="Total" localSheetId="0">Sheet1!$A$1:$A$9</definedName>` -/
@@ -305,6 +316,13 @@ structure Sheet.WellFormed (wb : Workbook) (s : Sheet) : Prop where
   tables_unmerged : ∀ t ∈ s.tables, ∀ m ∈ s.merges, t.range.overlaps m = false
   /-- Header cells show the column names (**Excel**). -/
   tables_header : ∀ t ∈ s.tables, t.headerOk wb.sst s = true
+  /-- A hyperlink goes somewhere: an address or a place in the workbook (**ECMA-376**). -/
+  links_target : ∀ h ∈ s.hyperlinks, h.rid.isSome ∨ h.location.isSome
+  /-- A hyperlink covers real cells (**ECMA-376**). -/
+  links_ref : ∀ h ∈ s.hyperlinks, h.ref.Valid
+  /-- A hyperlink's `r:id` names a relationship of its sheet (**ECMA-376**). openpyxl
+  refuses the whole workbook when one does not. -/
+  links_rel : ∀ h ∈ s.hyperlinks, ∀ id, h.rid = some id → id ∈ s.relIds
 
 structure Workbook.WellFormed (wb : Workbook) : Prop where
   has_sheet : wb.sheets ≠ []
@@ -481,6 +499,9 @@ def Sheet.check (wb : Workbook) (s : Sheet) : Bool :=
   && disjointB (s.tables.map (·.range))
   && s.tables.all (fun t => s.merges.all fun m => !t.range.overlaps m)
   && s.tables.all (Table.headerOk wb.sst s)
+  && s.hyperlinks.all (fun h => h.rid.isSome || h.location.isSome)
+  && s.hyperlinks.all (fun h => decide h.ref.Valid)
+  && s.hyperlinks.all (fun h => match h.rid with | some id => s.relIds.contains id | none => true)
 
 def Workbook.check (wb : Workbook) : Bool :=
   !wb.sheets.isEmpty && wb.sheets.all (Sheet.check wb)
@@ -532,7 +553,7 @@ theorem Row.check_sound {wb row} (h : Row.check wb row = true) : row.WellFormed 
 theorem Sheet.check_sound {wb s} (h : Sheet.check wb s = true) : s.WellFormed wb := by
   simp only [Sheet.check, Bool.and_eq_true, decide_eq_true_eq, List.all_eq_true,
     List.isEmpty_eq_false_iff, Bool.not_eq_eq_eq_not, Bool.not_true, bne_iff_ne, ne_eq] at h
-  obtain ⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨h1, h2⟩, h3⟩, hq1⟩, hq2⟩, hh⟩, h4⟩, h5⟩, hd⟩, hm⟩, hmd⟩, hme⟩, ht1⟩, ht2⟩, ht3⟩, ht4⟩ := h
+  obtain ⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨h1, h2⟩, h3⟩, hq1⟩, hq2⟩, hh⟩, h4⟩, h5⟩, hd⟩, hm⟩, hmd⟩, hme⟩, ht1⟩, ht2⟩, ht3⟩, ht4⟩, hl1⟩, hl2⟩, hl3⟩ := h
   exact {
     name_nonempty := h1
     name_short := h2
@@ -560,7 +581,13 @@ theorem Sheet.check_sound {wb s} (h : Sheet.check wb s = true) : s.WellFormed wb
     tables_shape := ht1
     tables_disjoint := disjointB_sound ht2
     tables_unmerged := fun t ht m hm => by simpa using ht3 t ht m hm
-    tables_header := ht4 }
+    tables_header := ht4
+    links_target := fun l hl => by simpa [Bool.or_eq_true] using hl1 l hl
+    links_ref := fun l hl => by simpa using hl2 l hl
+    links_rel := fun l hl id hid => by
+      have := hl3 l hl
+      rw [hid] at this
+      simpa using this }
 
 /-- **The checker is sound**: a workbook it accepts follows every rule. -/
 theorem Workbook.check_sound {wb : Workbook} (h : wb.check = true) : wb.WellFormed := by

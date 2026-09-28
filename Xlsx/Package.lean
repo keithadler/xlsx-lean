@@ -117,14 +117,17 @@ structure Rel where
   /-- `Target="/xl/workbook.xml"` (from the package root) rather than relative to the
   source's folder. openpyxl writes absolute targets; Excel writes relative ones. -/
   absolute : Bool := false
+  /-- `TargetMode="External"`: the target is a URI outside the package (a hyperlink's
+  web address), kept as the stem of `target`. Not a part, so the part rules skip it. -/
+  external : Bool := false
   deriving DecidableEq, Repr
 
 /-- Where a relationship lands, seen from a source in folder `dir`. -/
 def Rel.resolve (dir : List String) (r : Rel) : PartName :=
   if r.absolute then r.target else r.target.under dir
 
-@[simp] theorem Rel.resolve_relative (dir : List String) (i : String) (t : RelType) (p : PartName) :
-    (Rel.mk i t p false).resolve dir = p.under dir := rfl
+@[simp] theorem Rel.resolve_relative (dir : List String) (i : String) (t : RelType) (p : PartName) (x : Bool) :
+    (Rel.mk i t p false x).resolve dir = p.under dir := rfl
 
 /-- A package. `parts` lists the ordinary parts; the relationships parts are the
 `relsPart` of each source in `rels`, and `[Content_Types].xml` is not a part at all. -/
@@ -166,7 +169,7 @@ def relsOf (p : Package) (s : Source) : List Rel := (p.rels.lookup s).getD []
 
 /-- `a` points at `b` by some relationship. -/
 def Edge (p : Package) (a : Source) (b : PartName) : Prop :=
-  ∃ rs, (a, rs) ∈ p.rels ∧ ∃ r ∈ rs, r.resolve a.dir = b
+  ∃ rs, (a, rs) ∈ p.rels ∧ ∃ r ∈ rs, r.external = false ∧ r.resolve a.dir = b
 
 /-- A part a reader can find by following relationships from the package. -/
 inductive Reachable (p : Package) : PartName → Prop where
@@ -176,7 +179,7 @@ inductive Reachable (p : Package) : PartName → Prop where
 /-- What `/_rels/.rels` names as the main document. -/
 def mainDocument (p : Package) : List PartName :=
   (p.relsOf .package).filterMap fun r =>
-    if r.type = .officeDocument then some (r.resolve []) else none
+    if r.type = .officeDocument ∧ r.external = false then some (r.resolve []) else none
 
 /-- The rules a package must follow for a reader to open it. -/
 structure WellFormed (p : Package) : Prop where
@@ -187,7 +190,7 @@ structure WellFormed (p : Package) : Prop where
   /-- Relationships come from the package or from a part that exists. -/
   sources_exist : ∀ s rs, (s, rs) ∈ p.rels → ∀ n, s = .part n → p.has n
   /-- Every relationship lands on a part that exists. -/
-  targets_exist : ∀ s rs, (s, rs) ∈ p.rels → ∀ r ∈ rs, p.has (r.resolve s.dir)
+  targets_exist : ∀ s rs, (s, rs) ∈ p.rels → ∀ r ∈ rs, r.external = false → p.has (r.resolve s.dir)
   /-- Within one `.rels` part, ids are unique. -/
   ids_unique : ∀ s rs, (s, rs) ∈ p.rels → (rs.map (·.id)).Nodup
   /-- The package names exactly one main document. -/
@@ -231,7 +234,8 @@ theorem mem_of_lookup {α β} [DecidableEq α] {l : List (α × β)} {a : α} {b
 
 /-- Targets of relationships from any of `srcs`. -/
 def targetsFrom (p : Package) (srcs : List Source) : List PartName :=
-  p.rels.flatMap fun (s, rs) => if srcs.contains s then rs.map (·.resolve s.dir) else []
+  p.rels.flatMap fun (s, rs) =>
+    if srcs.contains s then (rs.filter (!·.external)).map (·.resolve s.dir) else []
 
 /-- Parts found after `k` rounds of following relationships from the package. -/
 def found (p : Package) : Nat → List PartName
@@ -246,7 +250,7 @@ def check (p : Package) : Bool :=
   && p.allParts.all (fun n => (p.contentType n).isSome)
   && p.rels.all (fun (s, rs) =>
        (match s with | .package => true | .part n => p.hasB n)
-       && rs.all (fun r => p.hasB (r.resolve s.dir))
+       && rs.all (fun r => r.external || p.hasB (r.resolve s.dir))
        && noDups (rs.map (·.id)))
   && p.mainDocument.length == 1
 
@@ -261,9 +265,9 @@ theorem mem_targetsFrom {p : Package} {srcs : List Source} {b : PartName}
   obtain ⟨⟨s, rs⟩, hmem, hb⟩ := h
   split at hb
   · rename_i hs
-    simp only [List.mem_map] at hb
-    obtain ⟨r, hr, rfl⟩ := hb
-    exact ⟨s, by simpa using hs, rs, hmem, r, hr, rfl⟩
+    simp only [List.mem_map, List.mem_filter, Bool.not_eq_eq_eq_not, Bool.not_true] at hb
+    obtain ⟨r, ⟨hr, hx⟩, rfl⟩ := hb
+    exact ⟨s, by simpa using hs, rs, hmem, r, hr, hx, rfl⟩
   · simp at hb
 
 theorem found_reachable {p : Package} : ∀ k, ∀ b ∈ p.found k, p.Reachable b
@@ -290,8 +294,10 @@ theorem check_sound {p : Package} (h : p.check = true) : p.WellFormed := by
     have := (hrels (s, rs) hmem).1.1
     subst hs
     exact hasB_sound (by simpa using this)
-  · intro s rs hmem r hr
-    exact hasB_sound ((hrels (s, rs) hmem).1.2 r hr)
+  · intro s rs hmem r hr hx
+    have := (hrels (s, rs) hmem).1.2 r hr
+    rw [hx, Bool.false_or] at this
+    exact hasB_sound this
   · intro s rs hmem
     exact noDups_sound (hrels (s, rs) hmem).2
 
@@ -314,20 +320,21 @@ theorem WellFormed.main_exists {p : Package} (h : p.WellFormed) :
     simp only [mainDocument, List.mem_filterMap] at this
     obtain ⟨r, hr, hm'⟩ := this
     split at hm'
-    · cases hm'
+    · rename_i hc
+      cases hm'
       simp only [relsOf] at hr
       cases hlk : p.rels.lookup .package with
       | none => simp [hlk] at hr
       | some rs =>
         rw [hlk, Option.getD_some] at hr
-        exact h.targets_exist .package rs (mem_of_lookup hlk) r hr
+        exact h.targets_exist .package rs (mem_of_lookup hlk) r hr hc.2
     · cases hm'
 
 /-- Following any relationship never leaves the package. -/
 theorem WellFormed.edge_lands {p : Package} (h : p.WellFormed) {a b} (e : p.Edge a b) :
     p.has b := by
-  obtain ⟨rs, hmem, r, hr, rfl⟩ := e
-  exact h.targets_exist a rs hmem r hr
+  obtain ⟨rs, hmem, r, hr, hx, rfl⟩ := e
+  exact h.targets_exist a rs hmem r hr hx
 
 /-- Every entry of the archive has a content type, so `[Content_Types].xml` is complete. -/
 theorem WellFormed.contentType_total {p : Package} (h : p.WellFormed) {n} (hn : n ∈ p.allParts) :

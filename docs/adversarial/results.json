@@ -1451,6 +1451,68 @@
   }
  },
  {
+  "name": "G29-hyperlinks",
+  "kind": "probe",
+  "what": "a hyperlink to a web address and one to a cell of the other sheet",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "W31-hyperlink-dangling",
+  "kind": "broken",
+  "what": "a hyperlink whose r:id names no relationship",
+  "ours": false,
+  "failed": [
+   "workbook_check"
+  ],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "rejects",
+   "error": "KeyError: 'Unknown relationship: rId9'"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "W32-hyperlink-nowhere",
+  "kind": "broken",
+  "what": "a hyperlink with neither r:id nor location",
+  "ours": false,
+  "failed": [
+   "workbook_check"
+  ],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
   "name": "G22-decimals",
   "kind": "probe",
   "what": "decimals 3.25, 1E-3, -6.02E23, and an error value",

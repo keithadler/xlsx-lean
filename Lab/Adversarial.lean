@@ -65,14 +65,22 @@ def withTables (name kind what : String) (wb : Workbook) : Case := Id.run do
   let mut k := 1
   let mut tparts : List PartName := []
   let mut srels : List (Source × List Rel) := []
+  let mut sheets : List Sheet := []
   for (i, s) in (sheetNums wb.sheets.length).zip wb.sheets do
-    unless s.tables.isEmpty do
+    let links := s.hyperlinks.filterMap (·.rid) |>.filter (s.relIds.contains ·)
+    if !(s.tables.isEmpty && links.isEmpty) then
       let mut rs : List Rel := []
       for j in List.range s.tables.length do
-        rs := rs ++ [Rel.mk s!"rId{j + 1}" (.other tableRelType) (tablePart k) true]
+        rs := rs ++ [Rel.mk s!"rId{j + 1}" (.other tableRelType) (tablePart k) true false]
         tparts := tparts ++ [tablePart k]
         k := k + 1
+      for id in links do
+        rs := rs ++ [Rel.mk id (.other hyperlinkRelType) ⟨[], "https://example.com/" ++ id, []⟩ false true]
       srels := srels ++ [(.part (sheetPart i), rs)]
+      sheets := sheets ++ [{ s with relIds := rs.map (·.id) }]
+    else
+      sheets := sheets ++ [s]
+  let wb := { wb with sheets }
   return { name, kind, what, wb, pkg := { base with
     parts := base.parts ++ tparts
     overrides := base.overrides ++ tparts.map (·, tableType)
@@ -117,13 +125,13 @@ def broken : List Case :=
       wb := base, pkg := wbRelsWith fun rs => rs.map fun r => if r.id = rid 2 then { r with id := rid 1 } else r }
   , { name := "P04-two-main", kind := "broken", what := "two officeDocument relationships"
       wb := base, pkg := { lay with rels := lay.rels.map fun (s, rs) =>
-        if s = .package then (s, rs ++ [⟨"rId2", .officeDocument, stylesPart, false⟩]) else (s, rs) } }
+        if s = .package then (s, rs ++ [⟨"rId2", .officeDocument, stylesPart, false, false⟩]) else (s, rs) } }
   , { name := "P05-orphan-part", kind := "probe", what := "a part nothing points at (ECMA-376-1 §9.1.4: readers ignore it)"
       wb := base, pkg := { lay with parts := lay.parts ++ [⟨["xl"], "orphan", ["xml"]⟩] } }
   , { name := "P06-entry-twice", kind := "broken", what := "sheet1.xml in the archive twice"
       wb := base, pkg := { lay with parts := lay.parts ++ [sheetPart 1] } }
   , { name := "P07-no-content-type", kind := "broken", what := "a reachable part with extension .bin and no content type"
-      wb := base, pkg := { (wbRelsWith fun rs => rs ++ [⟨"rId99", .theme, ⟨["theme"], "theme1", ["bin"]⟩, false⟩]) with
+      wb := base, pkg := { (wbRelsWith fun rs => rs ++ [⟨"rId99", .theme, ⟨["theme"], "theme1", ["bin"]⟩, false, false⟩]) with
         parts := lay.parts ++ [⟨["xl", "theme"], "theme1", ["bin"]⟩] } }
   , c "W13-same-cell-twice" "broken" "A1 written twice in one row, with 1 and then 2"
       (withRows [⟨1, [⟨⟨1, 1⟩, .number 1, 0, none⟩, ⟨⟨1, 1⟩, .number 2, 0, none⟩]⟩])
@@ -134,7 +142,7 @@ def broken : List Case :=
   , c "W16-merge-backwards" "broken" "merged C3:A1, corners reversed"
       (withLimits fun s => { s with merges := [Range.mk ⟨3, 3⟩ ⟨1, 1⟩] })
   , { name := "P09-names-differ-by-case", kind := "broken", what := "/xl/workbook.xml and /xl/Workbook.xml: one name to OPC"
-      wb := base, pkg := { (wbRelsWith fun rs => rs ++ [⟨"rId98", .theme, ⟨[], "Workbook", ["xml"]⟩, false⟩]) with
+      wb := base, pkg := { (wbRelsWith fun rs => rs ++ [⟨"rId98", .theme, ⟨[], "Workbook", ["xml"]⟩, false, false⟩]) with
         parts := lay.parts ++ [⟨["xl"], "Workbook", ["xml"]⟩] } }
   , { name := "P08-sheet-typed-styles", kind := "broken", what := "sheet1.xml typed as a styles part"
       wb := base, pkg := { lay with overrides := lay.overrides.map (fun p =>
@@ -220,6 +228,14 @@ def probes : List Case :=
       (limitsWithTables [factsTable] [{ name := "FACTS", formula := "Limits!$A$1" }])
   , withTables "W30-table-columns-twice" "broken" "a table with columns Fact and fact"
       (limitsWithTables [{ name := "Twice", range := ⟨⟨1, 2⟩, ⟨2, 6⟩⟩, header := false, columns := ["Fact", "fact"] }])
+  , withTables "G29-hyperlinks" "probe" "a hyperlink to a web address and one to a cell of the other sheet"
+      (withLimits fun s => { s with
+        hyperlinks := [{ ref := ⟨⟨1, 2⟩, ⟨1, 2⟩⟩, rid := some "rIdL1" }, { ref := ⟨⟨1, 3⟩, ⟨1, 3⟩⟩, location := some "Columns!B11" }]
+        relIds := ["rIdL1"] })
+  , withTables "W31-hyperlink-dangling" "broken" "a hyperlink whose r:id names no relationship"
+      (withLimits fun s => { s with hyperlinks := [{ ref := ⟨⟨1, 1⟩, ⟨1, 1⟩⟩, rid := some "rId9" }] })
+  , withTables "W32-hyperlink-nowhere" "broken" "a hyperlink with neither r:id nor location"
+      (withLimits fun s => { s with hyperlinks := [{ ref := ⟨⟨1, 1⟩, ⟨1, 1⟩⟩ }] })
   , c "G22-decimals" "probe" "decimals 3.25, 1E-3, -6.02E23, and an error value"
       (oneCellRow [⟨⟨1, 1⟩, .real 325 (-2), 0, none⟩, ⟨⟨2, 1⟩, .real 1 (-3), 0, none⟩,
         ⟨⟨3, 1⟩, .real (-602) 21, 0, none⟩, ⟨⟨4, 1⟩, .error "#N/A", 0, none⟩])

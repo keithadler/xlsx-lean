@@ -52,6 +52,8 @@ W27-tables-overlap           FAIL   ok        ok        ok        ok
 W28-table-over-merge         FAIL   ok        ok        ok        ok       
 W29-table-name-clash         FAIL   ok        ok        ok        ok       
 W30-table-columns-twice      FAIL   ok        ok        ok        ok       
+W31-hyperlink-dangling       FAIL   ok        REJECTS   ok        ok       
+W32-hyperlink-nowhere        FAIL   ok        ok        ok        ok       
 
 == gap ==
 case                         ours   expat     openpyxl  calamine  sheetjs  
@@ -96,6 +98,7 @@ G25-dates-1904               pass   ok        DIFFERS   DIFFERS   DIFFERS
 G26-one-hidden               pass   ok        ok        ok        ok       
 G27-names                    pass   ok        ok        ok        ok       
 G28-table                    pass   ok        ok        ok        ok       
+G29-hyperlinks               pass   ok        ok        ok        ok       
 G22-decimals                 pass   ok        ok        DIFFERS   ok       
                                     calamine: Probe!D1: read None, model '#N/A'
 G23-formula-cached           pass   ok        ok        ok        ok       

@@ -58,7 +58,10 @@ def relsXml (rs : List Rel) : String :=
   xmlHeader
   ++ "<Relationships xmlns=\"http://schemas.openxmlformats.org/package/2006/relationships\">"
   ++ String.join (rs.map fun r =>
-      s!"<Relationship Id=\"{attrEscape r.id}\" Type=\"{attrEscape r.type.uri}\" Target=\"{attrEscape (if r.absolute then r.target.render else r.target.renderRelative)}\"/>")
+      if r.external then
+        s!"<Relationship Id=\"{attrEscape r.id}\" Type=\"{attrEscape r.type.uri}\" Target=\"{attrEscape r.target.stem}\" TargetMode=\"External\"/>"
+      else
+        s!"<Relationship Id=\"{attrEscape r.id}\" Type=\"{attrEscape r.type.uri}\" Target=\"{attrEscape (if r.absolute then r.target.render else r.target.renderRelative)}\"/>")
   ++ "</Relationships>"
 
 def mainNs : String := "http://schemas.openxmlformats.org/spreadsheetml/2006/main"
@@ -97,6 +100,7 @@ def Cell.xml (c : Cell) : String :=
 
 def tableType : String := "application/vnd.openxmlformats-officedocument.spreadsheetml.table+xml"
 def tableRelType : String := "http://schemas.openxmlformats.org/officeDocument/2006/relationships/table"
+def hyperlinkRelType : String := "http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink"
 
 /-- `/xl/tables/table<k>.xml` -/
 def tablePart (k : Nat) : PartName := ⟨["xl", "tables"], "table" ++ numeral k, ["xml"]⟩
@@ -121,6 +125,11 @@ def Sheet.xml (s : Sheet) : String :=
   ++ (if s.merges.isEmpty then "" else
       s!"<mergeCells count=\"{s.merges.length}\">"
       ++ String.join (s.merges.map fun m => s!"<mergeCell ref=\"{m.toA1}\"/>") ++ "</mergeCells>")
+  ++ (if s.hyperlinks.isEmpty then "" else
+      "<hyperlinks>" ++ String.join (s.hyperlinks.map fun h =>
+        let rid := match h.rid with | some i => s!" r:id=\"{attrEscape i}\"" | none => ""
+        let loc := match h.location with | some l => s!" location=\"{attrEscape l}\"" | none => ""
+        s!"<hyperlink ref=\"{h.ref.toA1}\"{rid}{loc}/>") ++ "</hyperlinks>")
   ++ (if s.tables.isEmpty then "" else
       s!"<tableParts count=\"{s.tables.length}\">"
       ++ String.join ((List.range s.tables.length).map fun j => s!"<tablePart r:id=\"rId{j + 1}\"/>")

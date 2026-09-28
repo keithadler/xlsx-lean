@@ -80,9 +80,9 @@ def sheetNums (n : Nat) : List Nat := List.range' 1 n
 
 /-- The relationships of `/xl/workbook.xml`: the sheets, then styles, then shared strings. -/
 def workbookRels (n : Nat) : List Rel :=
-  (sheetNums n).map (fun i => ⟨rid i, .worksheet, ⟨["worksheets"], "sheet" ++ numeral i, ["xml"]⟩, false⟩)
-  ++ [⟨rid (n + 1), .styles, ⟨[], "styles", ["xml"]⟩, false⟩,
-      ⟨rid (n + 2), .sharedStrings, ⟨[], "sharedStrings", ["xml"]⟩, false⟩]
+  (sheetNums n).map (fun i => ⟨rid i, .worksheet, ⟨["worksheets"], "sheet" ++ numeral i, ["xml"]⟩, false, false⟩)
+  ++ [⟨rid (n + 1), .styles, ⟨[], "styles", ["xml"]⟩, false, false⟩,
+      ⟨rid (n + 2), .sharedStrings, ⟨[], "sharedStrings", ["xml"]⟩, false, false⟩]
 
 /-- The package for a workbook with `n` sheets. -/
 def layout (n : Nat) : Package where
@@ -90,7 +90,7 @@ def layout (n : Nat) : Package where
   defaults := [("rels", relsType), ("xml", "application/xml")]
   overrides := [(workbookPart, workbookType), (stylesPart, stylesType), (sstPart, sstType)]
     ++ (sheetNums n).map (fun i => (sheetPart i, worksheetType))
-  rels := [(.package, [⟨rid 1, .officeDocument, workbookPart, false⟩]),
+  rels := [(.package, [⟨rid 1, .officeDocument, workbookPart, false, false⟩]),
            (.part workbookPart, workbookRels n)]
 
 def Workbook.toPackage (wb : Workbook) : Package := layout wb.sheets.length
@@ -234,7 +234,7 @@ theorem layout_wellFormed (n : Nat) : (layout n).WellFormed where
     · cases hs
     · cases hs; exact Package.has_of_mem (by simp [layout])
   targets_exist := by
-    intro s rs hmem r hr
+    intro s rs hmem r hr _
     apply Package.has_of_mem
     simp only [layout, List.mem_cons, Prod.mk.injEq, List.not_mem_nil,
       or_false] at hmem
@@ -263,20 +263,26 @@ theorem Workbook.toPackage_wellFormed (wb : Workbook) : wb.toPackage.WellFormed 
   layout_wellFormed _
 
 /-- And it has no orphans: every part is found from the package. -/
+theorem workbookRels_internal {n : Nat} : ∀ r ∈ workbookRels n, r.external = false := by
+  intro r hr
+  simp only [workbookRels, List.mem_append, List.mem_map, List.mem_cons, List.not_mem_nil, or_false] at hr
+  rcases hr with ⟨i, _, rfl⟩ | rfl | rfl <;> rfl
+
 theorem layout_noOrphans (n : Nat) : (layout n).NoOrphans := by
   have hwb : (layout n).Reachable workbookPart :=
-    .root ⟨_, List.mem_cons_self .., _, List.mem_cons_self .., rfl⟩
+    .root ⟨_, List.mem_cons_self .., _, List.mem_cons_self .., rfl, rfl⟩
   have hstep : ∀ r ∈ workbookRels n, (layout n).Reachable (r.resolve ["xl"]) :=
-    fun r hr => .step hwb ⟨_, List.mem_cons_of_mem _ (List.mem_cons_self ..), r, hr, rfl⟩
+    fun r hr => .step hwb ⟨_, List.mem_cons_of_mem _ (List.mem_cons_self ..), r, hr,
+      workbookRels_internal r hr, rfl⟩
   intro x hx
   simp only [layout, List.mem_append, List.mem_cons, List.mem_map, List.not_mem_nil,
     or_false] at hx
   rcases hx with (rfl | rfl | rfl) | ⟨i, hi, rfl⟩
   · exact ⟨_, hwb, rfl⟩
-  · exact ⟨_, hstep ⟨rid (n + 1), .styles, ⟨[], "styles", ["xml"]⟩, false⟩ (by simp [workbookRels]), rfl⟩
-  · exact ⟨_, hstep ⟨rid (n + 2), .sharedStrings, ⟨[], "sharedStrings", ["xml"]⟩, false⟩
+  · exact ⟨_, hstep ⟨rid (n + 1), .styles, ⟨[], "styles", ["xml"]⟩, false, false⟩ (by simp [workbookRels]), rfl⟩
+  · exact ⟨_, hstep ⟨rid (n + 2), .sharedStrings, ⟨[], "sharedStrings", ["xml"]⟩, false, false⟩
       (by simp [workbookRels]), rfl⟩
-  · exact ⟨_, hstep ⟨rid i, .worksheet, ⟨["worksheets"], "sheet" ++ numeral i, ["xml"]⟩, false⟩
+  · exact ⟨_, hstep ⟨rid i, .worksheet, ⟨["worksheets"], "sheet" ++ numeral i, ["xml"]⟩, false, false⟩
       (by simp only [workbookRels, List.mem_append, List.mem_map]; exact Or.inl ⟨i, hi, rfl⟩), rfl⟩
 
 theorem Workbook.toPackage_noOrphans (wb : Workbook) : wb.toPackage.NoOrphans :=

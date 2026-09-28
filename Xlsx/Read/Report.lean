@@ -38,7 +38,7 @@ def packageProblems (p : Package) : Array Problem := Id.run do
     if let .part n := s then
       unless p.hasB n do
         out := out.push ⟨"sources_exist", where_, s!"relationships for {n.entryName}, which is not in the archive"⟩
-    for r in rs do
+    for r in rs.filter (!·.external) do
       let t := r.resolve s.dir
       unless p.hasB t do
         out := out.push ⟨"targets_exist", where_, s!"{r.id} points at {t.entryName}, which is not in the archive"⟩
@@ -161,6 +161,12 @@ def workbookProblems (wb : Workbook) (sheetEntries : Array (String × String)) :
         out := out.push ⟨"dimension_covers", place, s!"dimension {d.toA1} leaves out {outside.length} cell(s), first {(outside.head?.map (·.ref.toA1)).getD ""}"⟩
     for m in s.merges do
       unless decide m.Valid do out := out.push ⟨"merges_valid", s!"{place}!{m.toA1}", "corners out of order, or outside the sheet"⟩
+    for hl in s.hyperlinks do
+      let at_ := s!"{place}!{hl.ref.toA1} hyperlink"
+      if hl.rid.isNone && hl.location.isNone then out := out.push ⟨"links_target", at_, "goes nowhere: no r:id and no location"⟩
+      unless decide hl.ref.Valid do out := out.push ⟨"links_ref", at_, "does not cover real cells"⟩
+      if let some id := hl.rid then
+        unless s.relIds.contains id do out := out.push ⟨"links_rel", at_, s!"r:id {id} names no relationship of this sheet (openpyxl refuses the whole file)"⟩
     for t in s.tables do
       let at_ := s!"{place} table {t.name}"
       if !t.shapeOk then out := out.push ⟨"tables_shape", at_, s!"range {t.range.toA1} with {t.columns.length} column names: out of order, the wrong count, an empty name, or a name twice"⟩
