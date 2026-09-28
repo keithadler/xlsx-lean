@@ -143,10 +143,10 @@ def probes : List Case :=
       { sheets := (List.range' 1 255).map fun (i : Nat) => { name := s!"S{i}", rows := [⟨1, [⟨⟨1, 1⟩, .number (i : Int), 0, none⟩]⟩] }, sst := [], styleCount := 1 }
   , c "G19-formula-looking" "probe" "text =1+1 stored as a string" (inl "=1+1")
   , c "G20-empty-string" "probe" "an empty shared string" (shd "")
-  , c "G21-merges-and-dimension" "probe" "dimension A1:C6, merges A7:C7 and D1:D3"
+  , c "G21-merges-and-dimension" "probe" "dimension A1:D8, merges A7:C7, D1:D3 and the sheet's own A8:C8"
       (withLimits fun s => { s with
-        dimension := some (Range.mk ⟨1, 1⟩ ⟨4, 7⟩)
-        merges := [Range.mk ⟨1, 7⟩ ⟨3, 7⟩, Range.mk ⟨4, 1⟩ ⟨4, 3⟩] })
+        dimension := some (Range.mk ⟨1, 1⟩ ⟨4, 8⟩)
+        merges := s.merges ++ [Range.mk ⟨1, 7⟩ ⟨3, 7⟩, Range.mk ⟨4, 1⟩ ⟨4, 3⟩] })
   , c "W17-value-under-merge" "broken" "B1 holds a value under the merge A1:B1"
       (withLimits fun s => { s with merges := [Range.mk ⟨1, 1⟩ ⟨2, 1⟩] })
   , c "G22-decimals" "probe" "decimals 3.25, 1E-3, -6.02E23, and an error value"
