@@ -256,4 +256,41 @@ end
 
 def parse (b : ByteArray) : Except String Node := (document b).run' 0
 
+/-- Parse the one element that starts at `pos` (at its `<`), and say where it ends. -/
+def elementAt (b : ByteArray) (pos : Nat) : Except String (Node × Nat) := (element b).run pos
+
+/-- Where `pat` next occurs at or after `start`. -/
+def indexOf (b : ByteArray) (pat : String) (start : Nat) : Option Nat := Id.run do
+  let p := pat.toUTF8
+  if p.size == 0 then return some start
+  let mut i := start
+  while i + p.size ≤ b.size do
+    if b[i]! == p[0]! && startsWith b i pat then return some i
+    i := i + 1
+  return none
+
+/-- The bytes between `<sheetData …>` and `</sheetData>`, as `(content start, content end)`,
+if the element is there and not empty. A namespace prefix is allowed. -/
+def sheetDataSpan (b : ByteArray) : Option (Nat × Nat) := Id.run do
+  let mut from_ := 0
+  repeat
+    let some k := indexOf b "sheetData" from_ | return none
+    -- a start tag: `<sheetData` or `<x:sheetData`
+    let mut j := k
+    while j > 0 && b[j - 1]! != 60 && b[j - 1]! != 62 && b[j - 1]! != 32 do j := j - 1
+    if j > 0 && b[j - 1]! == 60 && (j == k || b[k - 1]! == 58) then
+      let some gt := indexOf b ">" k | return none
+      if gt > 0 && b[gt - 1]! == 47 then return none   -- `<sheetData/>`
+      -- the end tag: `</sheetData>` or `</x:sheetData>`
+      let mut e := gt + 1
+      repeat
+        let some close := indexOf b "sheetData>" e | return none
+        let mut c := close
+        while c > 0 && b[c - 1]! != 60 && b[c - 1]! != 62 do c := c - 1
+        if c ≥ 2 && b[c - 1]! == 60 && b[c]! == 47 then return some (gt + 1, c - 1)
+        e := close + 1
+      return none
+    from_ := k + 1
+  return none
+
 end Xlsx.Read

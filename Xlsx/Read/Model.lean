@@ -164,56 +164,64 @@ def parsePart (notes : Array Note) (name : String) (data : ByteArray) : Option N
   | .ok n => (some n, notes)
   | .error e => (none, notes.push ⟨.error, name, e⟩)
 
-def loadSheet (sheetName : String) (entry : String) (root : Node) (notes : Array Note) :
+/-- What reading a sheet's rows has gathered so far. -/
+structure RowAcc where
+  rows : Array Row := #[]
+  prevRow : Nat := 0
+  notes : Array Note
+  shared : Nat := 0
+  dates : Nat := 0
+
+/-- One `<row>` into the model. -/
+def rowStep (place : String) (acc : RowAcc) (rn : Node) : RowAcc := Id.run do
+  let mut notes := acc.notes
+  let mut shared := acc.shared
+  let mut dates := acc.dates
+  let idx := match rn.attr? "r" with
+    | some r => r.toNat?.getD 0
+    | none => acc.prevRow + 1
+  let mut cells : Array Cell := #[]
+  let mut prevCol := 0
+  for cn in rn.childrenNamed "c" do
+    let ref : Option CellRef := match cn.attr? "r" with
+      | some r => parseA1 r
+      | none => some ⟨prevCol + 1, idx⟩
+    let some ref := ref
+      | notes := notes.push ⟨.error, place, s!"row {idx}: cell reference {(cn.attr? "r").getD ""} is not A1 form"⟩
+    prevCol := ref.col
+    let style := ((cn.attr? "s").bind String.toNat?).getD 0
+    let formula := (cn.child? "f").map Node.textContent
+    if let some f := cn.child? "f" then
+      if f.attr? "t" == some "shared" then shared := shared + 1
+    -- an empty <v/> is a formula with no cached value yet (openpyxl writes these)
+    let v := ((cn.child? "v").map Node.textContent).filter (!·.trimAscii.isEmpty)
+    let t := (cn.attr? "t").getD "n"
+    let a1 := ref.toA1
+    let stored : Stored ← match t, v with
+      | "s", some v => match v.trimAscii.toString.toNat? with
+        | some i => pure (.shared i)
+        | none => do notes := notes.push ⟨.error, place, s!"{a1}: shared string index {v} is not a number"⟩; pure .empty
+      | "b", some v => pure (.bool (v.trimAscii.toString == "1" || v.trimAscii.toString == "true"))
+      | "e", some v => pure (.error v)
+      | "str", some v => pure (.inline v)
+      | "inlineStr", _ => pure (.inline (((cn.child? "is").map richText).getD ""))
+      | "d", some v => do dates := dates + 1; pure (.inline v)
+      | "n", some v => match parseNumber v with
+        | some s => pure s
+        | none => do notes := notes.push ⟨.error, place, s!"{a1}: {v} is not a number"⟩; pure .empty
+      | "n", none | "s", none | "b", none | "e", none | "str", none | "d", none => pure .empty
+      | other, _ => do notes := notes.push ⟨.error, place, s!"{a1}: unknown cell type t=\"{other}\""⟩; pure .empty
+    cells := cells.push (Cell.mk ref stored style formula)
+  return { rows := acc.rows.push ⟨idx, cells.toList⟩, prevRow := idx, notes, shared, dates }
+
+/-- The rest of a sheet, once its rows are read. -/
+def finishSheet (sheetName : String) (entry : String) (root : Node) (acc : RowAcc) :
     Sheet × Array Note := Id.run do
-  let mut notes := notes
+  let mut notes := acc.notes
   let place := s!"{sheetName} ({entry})"
   let extra := root.children.filter (fun k => !worksheetKnown.contains k.name) |>.map (·.name)
   unless extra.isEmpty do
     notes := notes.push ⟨.unmodeled, place, ", ".intercalate extra.toList⟩
-  let mut rows : Array Row := #[]
-  let mut prevRow := 0
-  let some data := root.child? "sheetData" | return ({ name := sheetName, rows := [] }, notes)
-  let mut shared := 0
-  let mut dates := 0
-  for rn in data.childrenNamed "row" do
-    let idx := match rn.attr? "r" with
-      | some r => r.toNat?.getD 0
-      | none => prevRow + 1
-    prevRow := idx
-    let mut cells : Array Cell := #[]
-    let mut prevCol := 0
-    for cn in rn.childrenNamed "c" do
-      let ref : Option CellRef := match cn.attr? "r" with
-        | some r => parseA1 r
-        | none => some ⟨prevCol + 1, idx⟩
-      let some ref := ref
-        | notes := notes.push ⟨.error, place, s!"row {idx}: cell reference {(cn.attr? "r").getD ""} is not A1 form"⟩
-      prevCol := ref.col
-      let style := ((cn.attr? "s").bind String.toNat?).getD 0
-      let formula := (cn.child? "f").map Node.textContent
-      if let some f := cn.child? "f" then
-        if f.attr? "t" == some "shared" then shared := shared + 1
-      -- an empty <v/> is a formula with no cached value yet (openpyxl writes these)
-      let v := ((cn.child? "v").map Node.textContent).filter (!·.trimAscii.isEmpty)
-      let t := (cn.attr? "t").getD "n"
-      let a1 := ref.toA1
-      let stored : Stored ← match t, v with
-        | "s", some v => match v.trimAscii.toString.toNat? with
-          | some i => pure (.shared i)
-          | none => do notes := notes.push ⟨.error, place, s!"{a1}: shared string index {v} is not a number"⟩; pure .empty
-        | "b", some v => pure (.bool (v.trimAscii.toString == "1" || v.trimAscii.toString == "true"))
-        | "e", some v => pure (.error v)
-        | "str", some v => pure (.inline v)
-        | "inlineStr", _ => pure (.inline (((cn.child? "is").map richText).getD ""))
-        | "d", some v => do dates := dates + 1; pure (.inline v)
-        | "n", some v => match parseNumber v with
-          | some s => pure s
-          | none => do notes := notes.push ⟨.error, place, s!"{a1}: {v} is not a number"⟩; pure .empty
-        | "n", none | "s", none | "b", none | "e", none | "str", none | "d", none => pure .empty
-        | other, _ => do notes := notes.push ⟨.error, place, s!"{a1}: unknown cell type t=\"{other}\""⟩; pure .empty
-      cells := cells.push (Cell.mk ref stored style formula)
-    rows := rows.push ⟨idx, cells.toList⟩
   let mut dimension : Option Range := none
   if let some d := root.child? "dimension" then
     match (d.attr? "ref").bind parseRange with
@@ -225,11 +233,49 @@ def loadSheet (sheetName : String) (entry : String) (root : Node) (notes : Array
       match (m.attr? "ref").bind parseRange with
       | some r => merges := merges ++ [r]
       | none => notes := notes.push ⟨.error, place, s!"mergeCell ref {(m.attr? "ref").getD ""} is not a range"⟩
-  if shared > 0 then
-    notes := notes.push ⟨.unmodeled, place, s!"{shared} shared formulas (kept as written, not expanded)"⟩
-  if dates > 0 then
-    notes := notes.push ⟨.unmodeled, place, s!"{dates} ISO date cells (t=\"d\"), read as text"⟩
-  return ({ name := sheetName, rows := rows.toList, dimension, merges }, notes)
+  if acc.shared > 0 then
+    notes := notes.push ⟨.unmodeled, place, s!"{acc.shared} shared formulas (kept as written, not expanded)"⟩
+  if acc.dates > 0 then
+    notes := notes.push ⟨.unmodeled, place, s!"{acc.dates} ISO date cells (t=\"d\"), read as text"⟩
+  return ({ name := sheetName, rows := acc.rows.toList, dimension, merges }, notes)
+
+/-- Read a sheet part. Rows are read one `<row>` at a time straight from the bytes, so
+only the model is kept, never the whole tree; the rest of the sheet is parsed from a
+copy with the rows cut out. -/
+def readSheet (sheetName entry : String) (b : ByteArray) (notes : Array Note) :
+    Option Node × Sheet × Array Note := Id.run do
+  let place := s!"{sheetName} ({entry})"
+  match sheetDataSpan b with
+  | none =>
+    match parse b with
+    | .error e => return (none, { name := sheetName, rows := [] }, notes.push ⟨.error, entry, e⟩)
+    | .ok root =>
+      let data := ((root.child? "sheetData").map (·.childrenNamed "row")).getD #[]
+      let acc := data.foldl (rowStep place) { notes }
+      let (sh, n) := finishSheet sheetName entry root acc
+      return (some root, sh, n)
+  | some (cs, ce) =>
+    let stripped := b.extract 0 cs ++ b.extract ce b.size
+    match parse stripped with
+    | .error e => return (none, { name := sheetName, rows := [] }, notes.push ⟨.error, entry, e⟩)
+    | .ok root =>
+      let mut acc : RowAcc := { notes }
+      let mut pos := cs
+      let mut failed := false
+      while pos < ce && !failed do
+        let c := b[pos]!
+        if c == 32 || c == 9 || c == 10 || c == 13 then pos := pos + 1
+        else if startsWith b pos "<!--" then
+          pos := ((indexOf b "-->" pos).map (· + 3)).getD ce
+        else if c == 60 then
+          match elementAt b pos with
+          | .ok (node, next) =>
+            if node.name == "row" then acc := rowStep place acc node
+            pos := next
+          | .error e => acc := { acc with notes := acc.notes.push ⟨.error, entry, e⟩ }; failed := true
+        else pos := pos + 1
+      let (sh, n) := finishSheet sheetName entry root acc
+      return (some root, sh, n)
 
 def load (entries : Array ZipEntry) : Loaded := Id.run do
   let mut notes : Array Note := #[]
@@ -331,11 +377,9 @@ def load (entries : Array ZipEntry) : Loaded := Id.run do
               match data target with
               | none => pure ()  -- the package check reports the dangling target
               | some d =>
-                let (root, n) := parsePart notes target.entryName d
+                let (root, sheet, n) := readSheet sname target.entryName d notes
                 notes := n
                 if let some root := root then
-                  let (sheet, n) := loadSheet sname target.entryName root notes
-                  notes := n
                   let state : SheetState := match s.attr? "state" with
                     | some "hidden" => .hidden | some "veryHidden" => .veryHidden | _ => .visible
                   -- tables: <tablePart r:id> through the sheet's own relationships
