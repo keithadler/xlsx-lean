@@ -1,5 +1,6 @@
 import Lean.Data.Json
 import Xlsx
+import Xlsx.Read.Report
 
 /-!
 # The adversarial corpus
@@ -45,9 +46,9 @@ def withSheetName (n : String) : Workbook :=
 def oneCell (c : Cell) (extra : List String := []) : Workbook :=
   { sheets := [{ name := "Probe", rows := [⟨c.ref.row, [c]⟩] }], sst := extra, styleCount := 2 }
 
-def inl (s : String) : Workbook := oneCell ⟨⟨1, 1⟩, .inline s, 0⟩
-def shd (s : String) : Workbook := oneCell ⟨⟨1, 1⟩, .shared 0, 0⟩ [s]
-def numw (n : Int) : Workbook := oneCell ⟨⟨1, 1⟩, .number n, 0⟩
+def inl (s : String) : Workbook := oneCell ⟨⟨1, 1⟩, .inline s, 0, none⟩
+def shd (s : String) : Workbook := oneCell ⟨⟨1, 1⟩, .shared 0, 0, none⟩ [s]
+def numw (n : Int) : Workbook := oneCell ⟨⟨1, 1⟩, .number n, 0, none⟩
 
 def lay : Package := layout 2
 def wbRelsWith (f : List Rel → List Rel) : Package :=
@@ -56,17 +57,17 @@ def wbRelsWith (f : List Rel → List Rel) : Package :=
 def broken : List Case :=
   let c := Case.ofWorkbook
   [ c "W01-sst-dangling" "broken" "a cell points at shared string 99 of 14"
-      (withRows [⟨1, [⟨⟨1, 1⟩, .shared 99, 0⟩]⟩])
+      (withRows [⟨1, [⟨⟨1, 1⟩, .shared 99, 0, none⟩]⟩])
   , c "W02-cells-unsorted" "broken" "B1 written before A1"
-      (withRows [⟨1, [⟨⟨2, 1⟩, .number 2, 0⟩, ⟨⟨1, 1⟩, .number 1, 0⟩]⟩])
+      (withRows [⟨1, [⟨⟨2, 1⟩, .number 2, 0, none⟩, ⟨⟨1, 1⟩, .number 1, 0, none⟩]⟩])
   , c "W03-row-twice" "broken" "row 1 written twice"
-      (withRows [⟨1, [⟨⟨1, 1⟩, .number 1, 0⟩]⟩, ⟨1, [⟨⟨2, 1⟩, .number 2, 0⟩]⟩])
+      (withRows [⟨1, [⟨⟨1, 1⟩, .number 1, 0, none⟩]⟩, ⟨1, [⟨⟨2, 1⟩, .number 2, 0, none⟩]⟩])
   , c "W04-cell-wrong-row" "broken" "cell A7 inside row 2"
-      (withRows [⟨2, [⟨⟨1, 7⟩, .number 7, 0⟩]⟩])
+      (withRows [⟨2, [⟨⟨1, 7⟩, .number 7, 0, none⟩]⟩])
   , c "W05-column-XFE" "broken" "column 16385 (XFE), one past the last"
-      (withRows [⟨1, [⟨⟨16385, 1⟩, .number 1, 0⟩]⟩])
+      (withRows [⟨1, [⟨⟨16385, 1⟩, .number 1, 0, none⟩]⟩])
   , c "W06-row-1048577" "broken" "row 1048577, one past the last"
-      (withRows [⟨1048577, [⟨⟨1, 1048577⟩, .number 1, 0⟩]⟩])
+      (withRows [⟨1048577, [⟨⟨1, 1048577⟩, .number 1, 0, none⟩]⟩])
   , c "W07-name-32" "broken" "sheet name of 32 characters"
       (withSheetName "ABCDEFGHIJKLMNOPQRSTUVWXYZ123456")
   , c "W08-name-slash" "broken" "sheet name containing /"
@@ -74,7 +75,7 @@ def broken : List Case :=
   , c "W09-name-case-clash" "broken" "sheets 'Limits' and 'LIMITS'"
       { base with sheets := [Example.limits, { Example.columns with name := "LIMITS" }] }
   , c "W10-name-empty" "broken" "empty sheet name" (withSheetName "")
-  , c "W11-style-dangling" "broken" "style 5 of 2" (withRows [⟨1, [⟨⟨1, 1⟩, .number 1, 5⟩]⟩])
+  , c "W11-style-dangling" "broken" "style 5 of 2" (withRows [⟨1, [⟨⟨1, 1⟩, .number 1, 5, none⟩]⟩])
   , c "W12-no-sheets" "broken" "a workbook with no sheets" { base with sheets := [] }
   , { name := "P01-rel-dangling", kind := "broken", what := "worksheet relationship to sheet9.xml, which is not there"
       wb := base, pkg := wbRelsWith fun rs => rs.map fun r =>
@@ -85,18 +86,18 @@ def broken : List Case :=
       wb := base, pkg := wbRelsWith fun rs => rs.map fun r => if r.id = rid 2 then { r with id := rid 1 } else r }
   , { name := "P04-two-main", kind := "broken", what := "two officeDocument relationships"
       wb := base, pkg := { lay with rels := lay.rels.map fun (s, rs) =>
-        if s = .package then (s, rs ++ [⟨"rId2", .officeDocument, stylesPart⟩]) else (s, rs) } }
+        if s = .package then (s, rs ++ [⟨"rId2", .officeDocument, stylesPart, false⟩]) else (s, rs) } }
   , { name := "P05-orphan-part", kind := "probe", what := "a part nothing points at (ECMA-376-1 §9.1.4: readers ignore it)"
       wb := base, pkg := { lay with parts := lay.parts ++ [⟨["xl"], "orphan", ["xml"]⟩] } }
   , { name := "P06-entry-twice", kind := "broken", what := "sheet1.xml in the archive twice"
       wb := base, pkg := { lay with parts := lay.parts ++ [sheetPart 1] } }
   , { name := "P07-no-content-type", kind := "broken", what := "a reachable part with extension .bin and no content type"
-      wb := base, pkg := { (wbRelsWith fun rs => rs ++ [⟨"rId99", .theme, ⟨["theme"], "theme1", ["bin"]⟩⟩]) with
+      wb := base, pkg := { (wbRelsWith fun rs => rs ++ [⟨"rId99", .theme, ⟨["theme"], "theme1", ["bin"]⟩, false⟩]) with
         parts := lay.parts ++ [⟨["xl", "theme"], "theme1", ["bin"]⟩] } }
   , c "W13-same-cell-twice" "broken" "A1 written twice in one row, with 1 and then 2"
-      (withRows [⟨1, [⟨⟨1, 1⟩, .number 1, 0⟩, ⟨⟨1, 1⟩, .number 2, 0⟩]⟩])
+      (withRows [⟨1, [⟨⟨1, 1⟩, .number 1, 0, none⟩, ⟨⟨1, 1⟩, .number 2, 0, none⟩]⟩])
   , { name := "P09-names-differ-by-case", kind := "broken", what := "/xl/workbook.xml and /xl/Workbook.xml: one name to OPC"
-      wb := base, pkg := { (wbRelsWith fun rs => rs ++ [⟨"rId98", .theme, ⟨[], "Workbook", ["xml"]⟩⟩]) with
+      wb := base, pkg := { (wbRelsWith fun rs => rs ++ [⟨"rId98", .theme, ⟨[], "Workbook", ["xml"]⟩, false⟩]) with
         parts := lay.parts ++ [⟨["xl"], "Workbook", ["xml"]⟩] } }
   , { name := "P08-sheet-typed-styles", kind := "broken", what := "sheet1.xml typed as a styles part"
       wb := base, pkg := { lay with overrides := lay.overrides.map (fun p =>
@@ -124,10 +125,10 @@ def probes : List Case :=
   , c "G14-int-10^400" "gap" "the integer 10^400" (numw (10 ^ 400))
   , c "G15-astral" "probe" "an emoji and CJK text" (inl "日本 🙂")
   , c "G16-markup" "probe" "XML specials in text and sheet name"
-      { (inl "<b>&amp;\"'</b>") with sheets := [{ name := "A&B <x>", rows := [⟨1, [⟨⟨1, 1⟩, .inline "<b>&amp;\"'</b>", 0⟩]⟩] }] }
+      { (inl "<b>&amp;\"'</b>") with sheets := [{ name := "A&B <x>", rows := [⟨1, [⟨⟨1, 1⟩, .inline "<b>&amp;\"'</b>", 0, none⟩]⟩] }] }
   , c "G17-empty-sheet" "probe" "a sheet with no rows" { sheets := [{ name := "Empty", rows := [] }], sst := [], styleCount := 1 }
   , c "G18-many-sheets" "probe" "255 sheets"
-      { sheets := (List.range' 1 255).map fun (i : Nat) => { name := s!"S{i}", rows := [⟨1, [⟨⟨1, 1⟩, .number (i : Int), 0⟩]⟩] }, sst := [], styleCount := 1 }
+      { sheets := (List.range' 1 255).map fun (i : Nat) => { name := s!"S{i}", rows := [⟨1, [⟨⟨1, 1⟩, .number (i : Int), 0, none⟩]⟩] }, sst := [], styleCount := 1 }
   , c "G19-formula-looking" "probe" "text =1+1 stored as a string" (inl "=1+1")
   , c "G20-empty-string" "probe" "an empty shared string" (shd "")
   ]
@@ -175,7 +176,7 @@ def randomWorkbook (seed : Nat) : Workbook := Id.run do
             | none => .shared sst.length
         if let .shared i := v then
           if i == sst.length then sst := sst ++ [pick pool (lcg s)]
-        cells := cells ++ [⟨⟨col, r⟩, v, if s % 7 == 0 then 1 else 0⟩]
+        cells := cells ++ [⟨⟨col, r⟩, v, if s % 7 == 0 then 1 else 0, none⟩]
       rows := rows ++ [⟨r, cells⟩]
     sheets := sheets ++ [{ name := s!"Fuzz {seed}-{si + 1}", rows }]
   return { sheets, sst, styleCount := 2 }
@@ -189,6 +190,9 @@ def valueJson : Option Value → Json
   | some (.number n) => Json.mkObj [("t", "n"), ("v", toString n)]
   | some (.text s) => Json.mkObj [("t", "s"), ("v", s)]
   | some (.bool b) => Json.mkObj [("t", "b"), ("v", toJson b)]
+  | some (.real m e) => Json.mkObj [("t", "r"), ("m", toString m), ("e", toString e)]
+  | some (.error c) => Json.mkObj [("t", "e"), ("v", c)]
+  | some .empty => Json.mkObj [("t", "empty")]
   | none => Json.mkObj [("t", "missing")]
 
 /-- Our verdict: every reading rule holds. -/

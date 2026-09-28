@@ -87,6 +87,8 @@ inductive RelType where
   | sharedStrings
   | styles
   | theme
+  /-- Any other relationship type, by its URI: calcChain, drawings, printer settings… -/
+  | other (uri : String)
   deriving DecidableEq, Repr
 
 /-- The URI each relationship type is written as. -/
@@ -105,13 +107,24 @@ def RelType.uri : RelType → String
     "http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles"
   | .theme =>
     "http://schemas.openxmlformats.org/officeDocument/2006/relationships/theme"
+  | .other u => u
 
 /-- One relationship: `<Relationship Id="rId1" Type="..." Target="worksheets/sheet1.xml"/>`. -/
 structure Rel where
   id : String
   type : RelType
   target : PartName
+  /-- `Target="/xl/workbook.xml"` (from the package root) rather than relative to the
+  source's folder. openpyxl writes absolute targets; Excel writes relative ones. -/
+  absolute : Bool := false
   deriving DecidableEq, Repr
+
+/-- Where a relationship lands, seen from a source in folder `dir`. -/
+def Rel.resolve (dir : List String) (r : Rel) : PartName :=
+  if r.absolute then r.target else r.target.under dir
+
+@[simp] theorem Rel.resolve_relative (dir : List String) (i : String) (t : RelType) (p : PartName) :
+    (Rel.mk i t p false).resolve dir = p.under dir := rfl
 
 /-- A package. `parts` lists the ordinary parts; the relationships parts are the
 `relsPart` of each source in `rels`, and `[Content_Types].xml` is not a part at all. -/
@@ -130,16 +143,30 @@ def relsParts (p : Package) : List PartName := p.rels.map (·.1.relsPart)
 /-- Every entry of the archive except `[Content_Types].xml`. -/
 def allParts (p : Package) : List PartName := p.parts ++ p.relsParts
 
-/-- A part's content type: its Override if it has one, otherwise the Default for its extension. -/
+/-- A part's content type: its Override if it has one, otherwise the Default for its
+extension. Both are matched without regard to ASCII case, as OPC requires. -/
 def contentType (p : Package) (n : PartName) : Option String :=
-  (p.overrides.lookup n).or (p.defaults.lookup n.ext)
+  ((p.overrides.find? (·.1.key == n.key)).map (·.2)).or
+    ((p.defaults.find? (fun d => PartName.fold d.1 == PartName.fold n.ext)).map (·.2))
+
+/-- The package has a part of this name, compared without regard to ASCII case: a
+relationship to `sharedStrings.xml` finds `SharedStrings.xml`, as it does in Excel. -/
+def has (p : Package) (n : PartName) : Prop := ∃ q ∈ p.parts, q.key = n.key
+
+def hasB (p : Package) (n : PartName) : Bool := p.parts.any (·.key == n.key)
+
+theorem hasB_sound {p : Package} {n : PartName} (h : p.hasB n = true) : p.has n := by
+  simp only [hasB, List.any_eq_true, beq_iff_eq] at h
+  exact h
+
+theorem has_of_mem {p : Package} {n : PartName} (h : n ∈ p.parts) : p.has n := ⟨n, h, rfl⟩
 
 /-- The relationships of one source. -/
 def relsOf (p : Package) (s : Source) : List Rel := (p.rels.lookup s).getD []
 
 /-- `a` points at `b` by some relationship. -/
 def Edge (p : Package) (a : Source) (b : PartName) : Prop :=
-  ∃ rs, (a, rs) ∈ p.rels ∧ ∃ r ∈ rs, r.target.under a.dir = b
+  ∃ rs, (a, rs) ∈ p.rels ∧ ∃ r ∈ rs, r.resolve a.dir = b
 
 /-- A part a reader can find by following relationships from the package. -/
 inductive Reachable (p : Package) : PartName → Prop where
@@ -149,7 +176,7 @@ inductive Reachable (p : Package) : PartName → Prop where
 /-- What `/_rels/.rels` names as the main document. -/
 def mainDocument (p : Package) : List PartName :=
   (p.relsOf .package).filterMap fun r =>
-    if r.type = .officeDocument then some (r.target.under []) else none
+    if r.type = .officeDocument then some (r.resolve []) else none
 
 /-- The rules a package must follow for a reader to open it. -/
 structure WellFormed (p : Package) : Prop where
@@ -158,9 +185,9 @@ structure WellFormed (p : Package) : Prop where
   /-- Every part, relationships parts included, has a content type. -/
   typed : ∀ n ∈ p.allParts, (p.contentType n).isSome
   /-- Relationships come from the package or from a part that exists. -/
-  sources_exist : ∀ s rs, (s, rs) ∈ p.rels → ∀ n, s = .part n → n ∈ p.parts
+  sources_exist : ∀ s rs, (s, rs) ∈ p.rels → ∀ n, s = .part n → p.has n
   /-- Every relationship lands on a part that exists. -/
-  targets_exist : ∀ s rs, (s, rs) ∈ p.rels → ∀ r ∈ rs, r.target.under s.dir ∈ p.parts
+  targets_exist : ∀ s rs, (s, rs) ∈ p.rels → ∀ r ∈ rs, p.has (r.resolve s.dir)
   /-- Within one `.rels` part, ids are unique. -/
   ids_unique : ∀ s rs, (s, rs) ∈ p.rels → (rs.map (·.id)).Nodup
   /-- The package names exactly one main document. -/
@@ -171,7 +198,7 @@ package. The standard tells readers to ignore parts they cannot place (ECMA-376 
 §9.1.4), so an orphan does not make a package unreadable; it is only untidy. It was a
 `WellFormed` rule until the adversarial corpus showed that to be stricter than the
 standard. -/
-def NoOrphans (p : Package) : Prop := ∀ n ∈ p.parts, p.Reachable n
+def NoOrphans (p : Package) : Prop := ∀ n ∈ p.parts, ∃ m, p.Reachable m ∧ m.key = n.key
 
 /-! ## The checker -/
 
@@ -204,7 +231,7 @@ theorem mem_of_lookup {α β} [DecidableEq α] {l : List (α × β)} {a : α} {b
 
 /-- Targets of relationships from any of `srcs`. -/
 def targetsFrom (p : Package) (srcs : List Source) : List PartName :=
-  p.rels.flatMap fun (s, rs) => if srcs.contains s then rs.map (·.target.under s.dir) else []
+  p.rels.flatMap fun (s, rs) => if srcs.contains s then rs.map (·.resolve s.dir) else []
 
 /-- Parts found after `k` rounds of following relationships from the package. -/
 def found (p : Package) : Nat → List PartName
@@ -218,15 +245,15 @@ def check (p : Package) : Bool :=
   noDups (p.allParts.map PartName.key)
   && p.allParts.all (fun n => (p.contentType n).isSome)
   && p.rels.all (fun (s, rs) =>
-       (match s with | .package => true | .part n => p.parts.contains n)
-       && rs.all (fun r => p.parts.contains (r.target.under s.dir))
+       (match s with | .package => true | .part n => p.hasB n)
+       && rs.all (fun r => p.hasB (r.resolve s.dir))
        && noDups (rs.map (·.id)))
   && p.mainDocument.length == 1
 
 /-- The orphan check: every part is found within `parts.length` rounds. -/
 def orphanCheck (p : Package) : Bool :=
   let f := p.found p.parts.length
-  p.parts.all (fun n => f.contains n)
+  p.parts.all (fun n => f.any (·.key == n.key))
 
 theorem mem_targetsFrom {p : Package} {srcs : List Source} {b : PartName}
     (h : b ∈ p.targetsFrom srcs) : ∃ a ∈ srcs, p.Edge a b := by
@@ -262,22 +289,23 @@ theorem check_sound {p : Package} (h : p.check = true) : p.WellFormed := by
   · intro s rs hmem n hs
     have := (hrels (s, rs) hmem).1.1
     subst hs
-    simpa using this
+    exact hasB_sound (by simpa using this)
   · intro s rs hmem r hr
-    simpa using (hrels (s, rs) hmem).1.2 r hr
+    exact hasB_sound ((hrels (s, rs) hmem).1.2 r hr)
   · intro s rs hmem
     exact noDups_sound (hrels (s, rs) hmem).2
 
 theorem orphanCheck_sound {p : Package} (h : p.orphanCheck = true) : p.NoOrphans := by
-  simp only [orphanCheck, List.all_eq_true, List.contains_iff_mem] at h
+  simp only [orphanCheck, List.all_eq_true, List.any_eq_true, beq_iff_eq] at h
   intro n hn
-  exact found_reachable _ n (h n hn)
+  obtain ⟨m, hm, hk⟩ := h n hn
+  exact ⟨m, found_reachable _ m hm, hk⟩
 
 /-! ## What a well-formed package guarantees a reader -/
 
 /-- The main document exists, and it is the only one. -/
 theorem WellFormed.main_exists {p : Package} (h : p.WellFormed) :
-    ∃ m, p.mainDocument = [m] ∧ m ∈ p.parts := by
+    ∃ m, p.mainDocument = [m] ∧ p.has m := by
   have hl := h.one_main
   match hm : p.mainDocument, hl with
   | [m], _ =>
@@ -297,7 +325,7 @@ theorem WellFormed.main_exists {p : Package} (h : p.WellFormed) :
 
 /-- Following any relationship never leaves the package. -/
 theorem WellFormed.edge_lands {p : Package} (h : p.WellFormed) {a b} (e : p.Edge a b) :
-    b ∈ p.parts := by
+    p.has b := by
   obtain ⟨rs, hmem, r, hr, rfl⟩ := e
   exact h.targets_exist a rs hmem r hr
 

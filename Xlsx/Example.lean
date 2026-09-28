@@ -19,9 +19,9 @@ def sst : List String :=
   , "colName_maxCol", "maxRow_eq", "toA1_last"                        -- 8 9 10
   , "Workbook.toPackage_wellFormed", "Column", "Name" ]                -- 11 12 13
 
-def txt (col row i : Nat) (style := 0) : Cell := ⟨⟨col, row⟩, .shared i, style⟩
-def num (col row : Nat) (n : Int) : Cell := ⟨⟨col, row⟩, .number n, 0⟩
-def str (col row : Nat) (s : String) : Cell := ⟨⟨col, row⟩, .inline s, 0⟩
+def txt (col row i : Nat) (style := 0) : Cell := ⟨⟨col, row⟩, .shared i, style, none⟩
+def num (col row : Nat) (n : Int) : Cell := ⟨⟨col, row⟩, .number n, 0, none⟩
+def str (col row : Nat) (s : String) : Cell := ⟨⟨col, row⟩, .inline s, 0, none⟩
 
 def limits : Sheet where
   name := "Limits"
@@ -31,7 +31,7 @@ def limits : Sheet where
     , ⟨3, [txt 1 3 4, str 2 3 (colName maxCol), txt 3 3 8]⟩
     , ⟨4, [txt 1 4 5, num 2 4 1048576, txt 3 4 9]⟩
     , ⟨5, [txt 1 5 6, str 2 5 (CellRef.mk maxCol maxRow).toA1, txt 3 5 10]⟩
-    , ⟨6, [txt 1 6 7, ⟨⟨2, 6⟩, .bool true, 0⟩, txt 3 6 11]⟩ ]
+    , ⟨6, [txt 1 6 7, ⟨⟨2, 6⟩, .bool true, 0, none⟩, txt 3 6 11]⟩ ]
 
 def sampleColumns : List Nat := [1, 2, 26, 27, 28, 52, 53, 702, 703, 16384]
 

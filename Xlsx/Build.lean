@@ -80,9 +80,9 @@ def sheetNums (n : Nat) : List Nat := List.range' 1 n
 
 /-- The relationships of `/xl/workbook.xml`: the sheets, then styles, then shared strings. -/
 def workbookRels (n : Nat) : List Rel :=
-  (sheetNums n).map (fun i => ⟨rid i, .worksheet, ⟨["worksheets"], "sheet" ++ numeral i, ["xml"]⟩⟩)
-  ++ [⟨rid (n + 1), .styles, ⟨[], "styles", ["xml"]⟩⟩,
-      ⟨rid (n + 2), .sharedStrings, ⟨[], "sharedStrings", ["xml"]⟩⟩]
+  (sheetNums n).map (fun i => ⟨rid i, .worksheet, ⟨["worksheets"], "sheet" ++ numeral i, ["xml"]⟩, false⟩)
+  ++ [⟨rid (n + 1), .styles, ⟨[], "styles", ["xml"]⟩, false⟩,
+      ⟨rid (n + 2), .sharedStrings, ⟨[], "sharedStrings", ["xml"]⟩, false⟩]
 
 /-- The package for a workbook with `n` sheets. -/
 def layout (n : Nat) : Package where
@@ -90,7 +90,7 @@ def layout (n : Nat) : Package where
   defaults := [("rels", relsType), ("xml", "application/xml")]
   overrides := [(workbookPart, workbookType), (stylesPart, stylesType), (sstPart, sstType)]
     ++ (sheetNums n).map (fun i => (sheetPart i, worksheetType))
-  rels := [(.package, [⟨rid 1, .officeDocument, workbookPart⟩]),
+  rels := [(.package, [⟨rid 1, .officeDocument, workbookPart, false⟩]),
            (.part workbookPart, workbookRels n)]
 
 def Workbook.toPackage (wb : Workbook) : Package := layout wb.sheets.length
@@ -139,24 +139,48 @@ theorem lookup_map_const {α β γ} [DecidableEq α] {f : γ → α} {v : β} {k
       simp only [List.map_cons, List.lookup, this]
       exact lookup_map_const (by simpa [hk] using h)
 
+theorem find?_map_const {α β} {f : Nat → α} {v : β} {q : α × β → Bool} :
+    ∀ {l : List Nat}, (∃ x ∈ l, q (f x, v) = true) →
+      ((l.map fun i => (f i, v)).find? q).map (·.2) = some v
+  | [], h => by simp at h
+  | a :: l, h => by
+    by_cases ha : q (f a, v) = true
+    · simp [List.find?, ha]
+    · simp only [List.map_cons, List.find?, Bool.not_eq_true] at ha ⊢
+      rw [ha]
+      obtain ⟨x, hx, hq⟩ := h
+      rcases List.mem_cons.1 hx with rfl | hx
+      · rw [ha] at hq; cases hq
+      · exact find?_map_const ⟨x, hx, hq⟩
+
 theorem contentType_sheet {n i : Nat} (hi : i ∈ sheetNums n) :
     (layout n).contentType (sheetPart i) = some worksheetType := by
-  simp only [Package.contentType, layout, List.lookup, List.cons_append]
-  have h1 : (sheetPart i == workbookPart) = false := by simp [sheetPart, workbookPart]
-  have h2 : (sheetPart i == stylesPart) = false := by simp [sheetPart, stylesPart]
-  have h3 : (sheetPart i == sstPart) = false := by simp [sheetPart, sstPart]
-  simp only [h1, h2, h3, List.nil_append]
-  rw [lookup_map_const (List.mem_map_of_mem hi)]
+  have hd : ∀ j, (sheetPart j).key.1 = [PartName.fold "xl", PartName.fold "worksheets"] := fun _ => rfl
+  have ne (p : PartName) (hp : p.key.1.length = 1) : (p.key == (sheetPart i).key) = false := by
+    rw [beq_eq_false_iff_ne]
+    intro h
+    have := congrArg (fun k => k.1.length) h
+    simp only [hd] at this
+    rw [hp] at this
+    cases this
+  unfold Package.contentType
+  have e : (layout n).overrides = [(workbookPart, workbookType), (stylesPart, stylesType),
+      (sstPart, sstType)] ++ (sheetNums n).map (fun i => (sheetPart i, worksheetType)) := rfl
+  have h3 : [(workbookPart, workbookType), (stylesPart, stylesType), (sstPart, sstType)].find?
+      (·.1.key == (sheetPart i).key) = none := by
+    simp only [List.find?, ne workbookPart rfl, ne stylesPart rfl, ne sstPart rfl]
+  rw [e, List.find?_append, h3, Option.none_or, find?_map_const ⟨i, hi, by simp⟩]
   rfl
 
 /-- Everything named `.xml` or `.rels` has a type, from the Defaults alone. -/
 theorem layout_typed_by_ext {n : Nat} {x : PartName} (h : x.ext = "xml" ∨ x.ext = "rels") :
     ((layout n).contentType x).isSome := by
   unfold Package.contentType
-  cases (layout n).overrides.lookup x with
+  cases ((layout n).overrides.find? (·.1.key == x.key)).map (·.2) with
   | some _ => rfl
   | none =>
-    rcases h with h | h <;> simp [layout, List.lookup, h]
+    have e : (layout n).defaults = [("rels", relsType), ("xml", "application/xml")] := rfl
+    rcases h with h | h <;> (rw [h, e]; decide +kernel)
 
 theorem relsOf_workbook (n : Nat) : (layout n).relsOf (.part workbookPart) = workbookRels n := by
   have hne : (Source.part workbookPart == Source.package) = false := by decide
@@ -208,9 +232,10 @@ theorem layout_wellFormed (n : Nat) : (layout n).WellFormed where
       or_false] at hmem
     rcases hmem with ⟨rfl, _⟩ | ⟨rfl, _⟩
     · cases hs
-    · cases hs; simp [layout]
+    · cases hs; exact Package.has_of_mem (by simp [layout])
   targets_exist := by
     intro s rs hmem r hr
+    apply Package.has_of_mem
     simp only [layout, List.mem_cons, Prod.mk.injEq, List.not_mem_nil,
       or_false] at hmem
     rcases hmem with ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩
@@ -241,18 +266,18 @@ theorem Workbook.toPackage_wellFormed (wb : Workbook) : wb.toPackage.WellFormed 
 theorem layout_noOrphans (n : Nat) : (layout n).NoOrphans := by
   have hwb : (layout n).Reachable workbookPart :=
     .root ⟨_, List.mem_cons_self .., _, List.mem_cons_self .., rfl⟩
-  have hstep : ∀ r ∈ workbookRels n, (layout n).Reachable (r.target.under ["xl"]) :=
+  have hstep : ∀ r ∈ workbookRels n, (layout n).Reachable (r.resolve ["xl"]) :=
     fun r hr => .step hwb ⟨_, List.mem_cons_of_mem _ (List.mem_cons_self ..), r, hr, rfl⟩
   intro x hx
   simp only [layout, List.mem_append, List.mem_cons, List.mem_map, List.not_mem_nil,
     or_false] at hx
   rcases hx with (rfl | rfl | rfl) | ⟨i, hi, rfl⟩
-  · exact hwb
-  · exact hstep ⟨rid (n + 1), .styles, ⟨[], "styles", ["xml"]⟩⟩ (by simp [workbookRels])
-  · exact hstep ⟨rid (n + 2), .sharedStrings, ⟨[], "sharedStrings", ["xml"]⟩⟩
-      (by simp [workbookRels])
-  · exact hstep ⟨rid i, .worksheet, ⟨["worksheets"], "sheet" ++ numeral i, ["xml"]⟩⟩
-      (by simp only [workbookRels, List.mem_append, List.mem_map]; exact Or.inl ⟨i, hi, rfl⟩)
+  · exact ⟨_, hwb, rfl⟩
+  · exact ⟨_, hstep ⟨rid (n + 1), .styles, ⟨[], "styles", ["xml"]⟩, false⟩ (by simp [workbookRels]), rfl⟩
+  · exact ⟨_, hstep ⟨rid (n + 2), .sharedStrings, ⟨[], "sharedStrings", ["xml"]⟩, false⟩
+      (by simp [workbookRels]), rfl⟩
+  · exact ⟨_, hstep ⟨rid i, .worksheet, ⟨["worksheets"], "sheet" ++ numeral i, ["xml"]⟩, false⟩
+      (by simp only [workbookRels, List.mem_append, List.mem_map]; exact Or.inl ⟨i, hi, rfl⟩), rfl⟩
 
 theorem Workbook.toPackage_noOrphans (wb : Workbook) : wb.toPackage.NoOrphans :=
   layout_noOrphans _
@@ -274,7 +299,7 @@ structure SpreadsheetConforms (p : Package) (sheets : Nat) : Prop where
     ((p.relsOf (.part m)).filter (·.type == .worksheet)).length = sheets
   /-- Each lands on a part typed as a worksheet. -/
   sheets_typed : ∀ m ∈ p.mainDocument, ∀ r ∈ p.relsOf (.part m), r.type = .worksheet →
-    p.contentType (r.target.under m.dir) = some worksheetType
+    p.contentType (r.resolve m.dir) = some worksheetType
 
 /-- The SpreadsheetML rules, as a check that runs. -/
 def conformsCheck (p : Package) (sheets : Nat) : Bool :=
@@ -282,7 +307,7 @@ def conformsCheck (p : Package) (sheets : Nat) : Bool :=
     p.contentType m == some workbookType
     && ((p.relsOf (.part m)).filter (·.type == .worksheet)).length == sheets
     && (p.relsOf (.part m)).all fun r =>
-        r.type != .worksheet || p.contentType (r.target.under m.dir) == some worksheetType
+        r.type != .worksheet || p.contentType (r.resolve m.dir) == some worksheetType
 
 theorem conformsCheck_sound {p : Package} {n : Nat} (h : conformsCheck p n = true) :
     SpreadsheetConforms p n := by

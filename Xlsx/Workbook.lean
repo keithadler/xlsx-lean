@@ -19,8 +19,14 @@ namespace Xlsx
 /-- What a cell holds, as someone reading the sheet sees it. -/
 inductive Value where
   | number (n : Int)
+  /-- `m × 10^e`, a number with a fractional part or an exponent, as written. -/
+  | real (m e : Int)
   | text (s : String)
   | bool (b : Bool)
+  /-- `#N/A`, `#DIV/0!` and the rest. -/
+  | error (code : String)
+  /-- A cell that is there for its format only, with no value. -/
+  | empty
   deriving DecidableEq, Repr
 
 /-- How a cell's value is written in the sheet part. -/
@@ -31,8 +37,14 @@ inductive Stored where
   | shared (i : Nat)
   /-- `<c t="b"><v>1</v></c>` -/
   | bool (b : Bool)
-  /-- `<c t="inlineStr"><is><t>hi</t></is></c>` -/
+  /-- `<c t="inlineStr"><is><t>hi</t></is></c>`, or a formula's text result `t="str"` -/
   | inline (s : String)
+  /-- `<c><v>3.25</v></c>` or `<v>1E-3</v>`: `m × 10^e`. -/
+  | real (m e : Int)
+  /-- `<c t="e"><v>#N/A</v></c>` -/
+  | error (code : String)
+  /-- `<c r="B2" s="1"/>`: a format and no value. -/
+  | empty
   deriving DecidableEq, Repr
 
 /-- Read a stored value, looking text up in the shared string table. -/
@@ -41,12 +53,17 @@ def Stored.resolve (sst : List String) : Stored → Option Value
   | .shared i => sst[i]?.map .text
   | .bool b => some (.bool b)
   | .inline s => some (.text s)
+  | .real m e => some (.real m e)
+  | .error c => some (.error c)
+  | .empty => some .empty
 
 structure Cell where
   ref : CellRef
   stored : Stored
   /-- Index into `cellXfs` in `/xl/styles.xml`; `0` is the default format. -/
   style : Nat := 0
+  /-- The formula, if the value was computed: `<f>SUM(A1:A3)</f>`. Not evaluated. -/
+  formula : Option String := none
   deriving DecidableEq, Repr
 
 structure Row where
@@ -94,6 +111,21 @@ def textOk (s : String) : Bool := s.toList.all xmlChar && utf16Length s ≤ maxT
 readers that use doubles already lose it past 2^53 (**Excel**). -/
 def maxNumber : Nat := 10 ^ 15
 
+/-- The largest finite double, `(2^53 - 1) × 2^971`. -/
+def maxDouble : Nat := (2 ^ 53 - 1) * 2 ^ 971
+
+/-- A decimal `m × 10^e` a reader can hold: it is a finite double (**XML Schema**
+`xsd:double`, which is what SpreadsheetML numbers are). -/
+def realOk (m e : Int) : Bool :=
+  e ≤ 400 && (e < 0 || m.natAbs * 10 ^ e.toNat ≤ maxDouble)
+
+/-- The error values: the seven of ECMA-376's formula grammar (`#NULL!` to `#N/A`) and the
+ones Excel has added since (`#GETTING_DATA`, `#SPILL!`, …) (**ECMA-376**, **Excel**). -/
+def errorCodes : List String :=
+  ["#NULL!", "#DIV/0!", "#VALUE!", "#REF!", "#NAME?", "#NUM!", "#N/A", "#GETTING_DATA",
+   "#SPILL!", "#CALC!", "#FIELD!", "#BLOCKED!", "#CONNECT!", "#BUSY!", "#UNKNOWN!", "#PYTHON!",
+   "#EXTERNAL!"]
+
 /-- Characters Excel refuses in a sheet name. -/
 def forbiddenInSheetName : List Char := ['[', ']', ':', '*', '?', '/', '\\']
 
@@ -111,6 +143,12 @@ structure Cell.WellFormed (wb : Workbook) (row : Row) (c : Cell) : Prop where
   number_ok : ∀ n, c.stored = .number n → n.natAbs < maxNumber
   /-- Inline text is writable (**XML**, **Excel**). -/
   inline_ok : ∀ t, c.stored = .inline t → textOk t = true
+  /-- A decimal is a finite double (**XML Schema**). -/
+  real_ok : ∀ m e, c.stored = .real m e → realOk m e = true
+  /-- An error value is one of the known codes (**ECMA-376**, **Excel**). -/
+  error_ok : ∀ code, c.stored = .error code → code ∈ errorCodes
+  /-- A formula is writable text (**XML**, **Excel**). -/
+  formula_ok : ∀ f, c.formula = some f → textOk f = true
 
 structure Row.WellFormed (wb : Workbook) (row : Row) : Prop where
   index_pos : 0 < row.index
@@ -149,6 +187,9 @@ theorem Cell.WellFormed.resolves {wb : Workbook} {row : Row} {c : Cell}
   | number n => exact ⟨_, rfl⟩
   | bool b => exact ⟨_, rfl⟩
   | inline s => exact ⟨_, rfl⟩
+  | real m e => exact ⟨_, rfl⟩
+  | error c => exact ⟨_, rfl⟩
+  | empty => exact ⟨_, rfl⟩
   | shared i =>
     have hi := h.shared_ok i hs
     exact ⟨.text wb.sst[i], by simp [Stored.resolve, hi]⟩
@@ -222,8 +263,11 @@ def Cell.check (wb : Workbook) (row : Row) (c : Cell) : Bool :=
       | .shared i => i < wb.sst.length
       | .number n => n.natAbs < maxNumber
       | .inline t => textOk t
-      | .bool _ => true)
+      | .real m e => realOk m e
+      | .error code => errorCodes.contains code
+      | .bool _ | .empty => true)
   && c.style < wb.styleCount
+  && (match c.formula with | some f => textOk f | none => true)
 
 def Row.check (wb : Workbook) (row : Row) : Bool :=
   0 < row.index && row.index ≤ maxRow && row.cells.all (Cell.check wb row)
@@ -243,8 +287,8 @@ def Workbook.check (wb : Workbook) : Bool :=
 
 theorem Cell.check_sound {wb row c} (h : Cell.check wb row c = true) : c.WellFormed wb row := by
   simp only [Cell.check, Bool.and_eq_true, beq_iff_eq, decide_eq_true_eq] at h
-  obtain ⟨⟨⟨⟨h1, h2⟩, h3⟩, h4⟩, h5⟩ := h
-  refine ⟨h1, h2, h3, ?_, h5, ?_, ?_⟩
+  obtain ⟨⟨⟨⟨⟨h1, h2⟩, h3⟩, h4⟩, h5⟩, h6⟩ := h
+  refine ⟨h1, h2, h3, ?_, h5, ?_, ?_, ?_, ?_, ?_⟩
   · intro i hi
     rw [hi] at h4
     simpa using h4
@@ -254,6 +298,15 @@ theorem Cell.check_sound {wb row c} (h : Cell.check wb row c = true) : c.WellFor
   · intro t ht
     rw [ht] at h4
     simpa using h4
+  · intro m e hme
+    rw [hme] at h4
+    simpa using h4
+  · intro code hc
+    rw [hc] at h4
+    simpa using h4
+  · intro f hf
+    rw [hf] at h6
+    simpa using h6
 
 theorem Row.check_sound {wb row} (h : Row.check wb row = true) : row.WellFormed wb := by
   simp only [Row.check, Bool.and_eq_true, decide_eq_true_eq, List.all_eq_true] at h

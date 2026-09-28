@@ -28,6 +28,7 @@ def RelType.short : RelType → String
   | .sharedStrings => "sharedStrings"
   | .styles => "styles"
   | .theme => "theme"
+  | .other u => (u.splitOn "/").getLast!
 
 def role (contentType : Option String) : String :=
   match contentType with
@@ -55,7 +56,7 @@ def packageJson (p : Package) (title : String) (sheets : Nat) : Json :=
   let rels := p.rels.map fun (s, rs) =>
     Json.mkObj [("source", sourceJson s), ("relsPart", s.relsPart.entryName),
       ("items", Json.arr (rs.map fun r => Json.mkObj [("id", r.id),
-        ("type", RelType.short r.type), ("target", (r.target.under s.dir).entryName),
+        ("type", RelType.short r.type), ("target", (r.resolve s.dir).entryName),
         ("written", r.target.renderRelative)]).toArray)]
   Json.mkObj [("title", title), ("parts", Json.arr parts.toArray), ("rels", Json.arr rels.toArray),
     ("defaults", Json.arr (p.defaults.map fun (e, t) => Json.mkObj [("ext", e), ("type", t)]).toArray),
@@ -68,10 +69,16 @@ def cellJson (sst : List String) (c : Cell) : Json :=
     | .shared i => ("shared", toString i)
     | .bool b => ("bool", if b then "1" else "0")
     | .inline s => ("inline", s)
+    | .real m e => ("real", s!"{m}E{e}")
+    | .error c => ("error", c)
+    | .empty => ("empty", "")
   let value : Json := match c.stored.resolve sst with
     | some (.number n) => Json.mkObj [("kind", "number"), ("text", toString n)]
     | some (.text s) => Json.mkObj [("kind", "text"), ("text", s)]
     | some (.bool b) => Json.mkObj [("kind", "bool"), ("text", if b then "TRUE" else "FALSE")]
+    | some (.real m e) => Json.mkObj [("kind", "number"), ("text", s!"{m}E{e}")]
+    | some (.error c) => Json.mkObj [("kind", "error"), ("text", c)]
+    | some .empty => Json.mkObj [("kind", "empty"), ("text", "")]
     | none => Json.mkObj [("kind", "missing"), ("text", "#REF!")]
   Json.mkObj [("ref", c.ref.toA1), ("col", toJson c.ref.col), ("row", toJson c.ref.row), ("kind", kind),
     ("raw", raw), ("value", value), ("style", toJson c.style), ("xml", c.xml)]

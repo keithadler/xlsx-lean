@@ -58,7 +58,7 @@ def relsXml (rs : List Rel) : String :=
   xmlHeader
   ++ "<Relationships xmlns=\"http://schemas.openxmlformats.org/package/2006/relationships\">"
   ++ String.join (rs.map fun r =>
-      s!"<Relationship Id=\"{xmlEscape r.id}\" Type=\"{r.type.uri}\" Target=\"{xmlEscape r.target.renderRelative}\"/>")
+      s!"<Relationship Id=\"{attrEscape r.id}\" Type=\"{attrEscape r.type.uri}\" Target=\"{attrEscape (if r.absolute then r.target.render else r.target.renderRelative)}\"/>")
   ++ "</Relationships>"
 
 def mainNs : String := "http://schemas.openxmlformats.org/spreadsheetml/2006/main"
@@ -73,11 +73,18 @@ def Workbook.workbookXml (wb : Workbook) : String :=
 def Cell.xml (c : Cell) : String :=
   let r := c.ref.toA1
   let s := if c.style = 0 then "" else s!" s=\"{numeral c.style}\""
+  let f := match c.formula with | some f => s!"<f>{xmlEscape f}</f>" | none => ""
   match c.stored with
-  | .number n => s!"<c r=\"{r}\"{s}><v>{n}</v></c>"
-  | .shared i => s!"<c r=\"{r}\"{s} t=\"s\"><v>{i}</v></c>"
-  | .bool b => s!"<c r=\"{r}\"{s} t=\"b\"><v>{if b then 1 else 0}</v></c>"
-  | .inline t => s!"<c r=\"{r}\"{s} t=\"inlineStr\"><is><t>{xmlEscape t}</t></is></c>"
+  | .number n => s!"<c r=\"{r}\"{s}>{f}<v>{n}</v></c>"
+  | .real m e => s!"<c r=\"{r}\"{s}>{f}<v>{m}E{e}</v></c>"
+  | .shared i => s!"<c r=\"{r}\"{s} t=\"s\">{f}<v>{i}</v></c>"
+  | .bool b => s!"<c r=\"{r}\"{s} t=\"b\">{f}<v>{if b then 1 else 0}</v></c>"
+  | .error code => s!"<c r=\"{r}\"{s} t=\"e\">{f}<v>{xmlEscape code}</v></c>"
+  | .empty => if f.isEmpty then s!"<c r=\"{r}\"{s}/>" else s!"<c r=\"{r}\"{s}>{f}</c>"
+  | .inline t =>
+    -- a formula's text result is t="str"; plain text is an inline string
+    if f.isEmpty then s!"<c r=\"{r}\"{s} t=\"inlineStr\"><is><t xml:space=\"preserve\">{xmlEscape t}</t></is></c>"
+    else s!"<c r=\"{r}\"{s} t=\"str\">{f}<v>{xmlEscape t}</v></c>"
 
 def Sheet.xml (s : Sheet) : String :=
   xmlHeader ++ s!"<worksheet xmlns=\"{mainNs}\"><sheetData>"
@@ -90,8 +97,9 @@ def Workbook.sstXml (wb : Workbook) : String :=
   ++ String.join (wb.sst.map fun t => s!"<si><t xml:space=\"preserve\">{xmlEscape t}</t></si>")
   ++ "</sst>"
 
-/-- Two formats: `0` is the default, `1` is bold. `styleCount` in the model is 2. -/
-def stylesXml : String :=
+/-- `cellXfs` with exactly `wb.styleCount` formats: `0` is the default, the rest bold. -/
+def stylesXml (n : Nat) : String :=
+  let n := max n 1
   xmlHeader ++ s!"<styleSheet xmlns=\"{mainNs}\">"
   ++ "<fonts count=\"2\"><font><sz val=\"11\"/><name val=\"Calibri\"/></font>"
   ++ "<font><b/><sz val=\"11\"/><name val=\"Calibri\"/></font></fonts>"
@@ -99,16 +107,17 @@ def stylesXml : String :=
   ++ "<fill><patternFill patternType=\"gray125\"/></fill></fills>"
   ++ "<borders count=\"1\"><border><left/><right/><top/><bottom/><diagonal/></border></borders>"
   ++ "<cellStyleXfs count=\"1\"><xf numFmtId=\"0\" fontId=\"0\" fillId=\"0\" borderId=\"0\"/></cellStyleXfs>"
-  ++ "<cellXfs count=\"2\"><xf numFmtId=\"0\" fontId=\"0\" fillId=\"0\" borderId=\"0\" xfId=\"0\"/>"
-  ++ "<xf numFmtId=\"0\" fontId=\"1\" fillId=\"0\" borderId=\"0\" xfId=\"0\" applyFont=\"1\"/></cellXfs>"
-  ++ "<cellStyles count=\"1\"><cellStyle name=\"Normal\" xfId=\"0\" builtinId=\"0\"/></cellStyles>"
+  ++ s!"<cellXfs count=\"{n}\"><xf numFmtId=\"0\" fontId=\"0\" fillId=\"0\" borderId=\"0\" xfId=\"0\"/>"
+  ++ String.join ((List.range (n - 1)).map fun _ =>
+      "<xf numFmtId=\"0\" fontId=\"1\" fillId=\"0\" borderId=\"0\" xfId=\"0\" applyFont=\"1\"/>")
+  ++ "</cellXfs><cellStyles count=\"1\"><cellStyle name=\"Normal\" xfId=\"0\" builtinId=\"0\"/></cellStyles>"
   ++ "</styleSheet>"
 
 /-- The content of a part, by what the package says it is. A part the workbook has no
 content for (possible in a hand-built package) gets an empty element. -/
 def partContent (wb : Workbook) (n : PartName) : String :=
   if n = workbookPart then wb.workbookXml
-  else if n = stylesPart then stylesXml
+  else if n = stylesPart then stylesXml wb.styleCount
   else if n = sstPart then wb.sstXml
   else match ((sheetNums wb.sheets.length).zip wb.sheets).find? (fun (i, _) => sheetPart i = n) with
     | some (_, s) => s.xml

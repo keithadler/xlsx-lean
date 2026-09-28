@@ -6,3 +6,7 @@ import Xlsx.Xml
 import Xlsx.Zip
 import Xlsx.Example
 import Xlsx.Visuals
+import Xlsx.Read.Xml
+import Xlsx.Read.Zip
+import Xlsx.Read.Model
+import Xlsx.Read.Report

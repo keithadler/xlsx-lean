@@ -6,7 +6,7 @@ DEFLATE entirely. Nothing about it is proved yet: that is the next step, reading
 what it writes. For compressed output, `kim-em/lean-zip` has a verified DEFLATE.
 -/
 
-namespace Xlsx.Zip
+namespace Xlsx.Archive
 
 /-- The CRC-32 table (polynomial `0xEDB88320`, reflected). -/
 def crcTable : Array UInt32 := Id.run do
@@ -58,4 +58,4 @@ def archive (entries : List Entry) : ByteArray := Id.run do
     ++ u32 central.size ++ u32 cdOffset ++ u16 0
   return out
 
-end Xlsx.Zip
+end Xlsx.Archive
