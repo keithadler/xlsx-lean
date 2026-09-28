@@ -97,7 +97,7 @@ theorem contentType_layoutT_base {ts : List Nat} {x : PartName} (hx : x.dir.leng
 
 theorem relsOf_layoutT_package (ts : List Nat) :
     (layoutT ts).relsOf .package = (layout ts.length).relsOf .package := by
-  simp [Package.relsOf, layoutT, layout, List.lookup]
+  simp [Package.relsOf, layoutT, layout]
 
 theorem mainDocument_layoutT (ts : List Nat) : (layoutT ts).mainDocument = [workbookPart] := by
   rw [← mainDocument_layout ts.length]
