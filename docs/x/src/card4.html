@@ -1,0 +1,22 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="base.css">
+<style>
+table { border-collapse: collapse; width: 100%; margin-top: 34px; font-size: 25px; }
+th { text-align: left; font: 600 17px 'JetBrains Mono', monospace; color: #8c94a8; padding: 10px 14px; border-bottom: 1px solid rgba(255,255,255,.12); }
+td { padding: 18px 14px; border-bottom: 1px solid rgba(255,255,255,.07); }
+td.m { font-family: 'JetBrains Mono', monospace; }
+.ok { color: #6ee7a8; } .bad { color: #ff8f8f; font-weight: 700; } .warn { color: #ffcf70; font-weight: 600; }
+</style></head><body>
+<div class="card" style="flex-direction: column; gap: 0">
+  <div class="kicker">Dates · the 1900 leap-year bug, still here</div>
+  <h1 style="font-size: 54px">Same file. Three readers. Three answers.</h1>
+  <table>
+    <tr><th>serial</th><th>Excel&#39;s rule</th><th>openpyxl</th><th>calamine</th><th>SheetJS 0.18.5</th></tr>
+    <tr><td class="m">1</td><td class="m ok">1900-01-01</td><td class="m ok">1900-01-01</td><td class="m ok">1900-01-01</td><td class="m warn">1899-12-31</td></tr>
+    <tr><td class="m">59</td><td class="m ok">1900-02-28</td><td class="m ok">1900-02-28</td><td class="m ok">1900-02-28</td><td class="m warn">1900-02-27</td></tr>
+    <tr><td class="m">60</td><td class="m ok">1900-02-29</td><td class="m warn">1900-02-28</td><td class="m warn">1900-02-28</td><td class="m warn">1900-02-28</td></tr>
+    <tr><td class="m">45000, 1904 system</td><td class="m ok">2027-03-16</td><td class="m ok">2027-03-16</td><td class="m ok">2027-03-16</td><td class="m warn">2023-03-15</td></tr>
+    <tr><td class="m">3000000</td><td class="m ok">out of range</td><td class="m">#VALUE!</td><td class="m bad">crashes</td><td class="m warn">year 10113</td></tr>
+  </table>
+  <p class="lede" style="font-size: 22px; margin-top: 30px">1900-02-29 never existed; Excel keeps it from Lotus 1-2-3. The spec reads serials as Excel shows them, and a date past 9999-12-31 breaks a rule.</p>
+  <div class="foot"><span><b>github.com/keithadler/xlsx-lean</b> · MIT</span><span>openpyxl 3.1.5 · python-calamine 0.4.0 · SheetJS 0.18.5</span></div>
+</div></body></html>

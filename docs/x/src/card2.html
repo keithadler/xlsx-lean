@@ -1,0 +1,16 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="base.css"><style>
+.grid { gap: 22px; margin-top: 40px; } .f { padding: 26px 28px; }
+.f .t { font-size: 18px; } .f .h { font-size: 31px; margin-top: 10px; } .f .s { font-size: 20px; margin-top: 10px; }
+</style></head><body>
+<div class="card" style="flex-direction: column; gap: 0">
+  <div class="kicker">Crashes, hangs, corrupted data</div>
+  <h1 style="font-size: 64px">Some files take a reader down.</h1>
+  <div class="grid">
+    <div class="f"><div class="t">3 different files, one from Apache POI's own tests</div><div class="h">calamine <span class="bad">crashes</span> (a Rust panic)</div><div class="s">A shared-string index past the table, a date past 9999-12-31, a pre-release Excel 2007 file</div></div>
+    <div class="f"><div class="t">an XML entity bomb from Apache POI's test suite</div><div class="h">openpyxl <span class="bad">never finishes</span></div><div class="s">3 GB of memory after 18 minutes. calamine refuses it in 0.1 s.</div></div>
+    <div class="f"><div class="t">two archives whose CRC-32 checks fail</div><div class="h">calamine and SheetJS <span class="bad">hand you the corrupted data</span></div><div class="s">No warning. <code>unzip -t</code> agrees the files are damaged.</div></div>
+    <div class="f"><div class="t">one hyperlink with an ID that points nowhere</div><div class="h">openpyxl <span class="warn">refuses the entire workbook</span></div><div class="s">Same for one bad conditional format, comment author or validation range</div></div>
+  </div>
+  <p class="lede" style="font-size: 26px; margin-top: 36px">xlsxlean answers every one of them, and 13,000 fuzzed files more, without a crash or a hang.</p>
+  <div class="foot"><span><b>github.com/keithadler/xlsx-lean</b> · MIT</span><span>openpyxl 3.1.5 · python-calamine 0.4.0 · SheetJS 0.18.5</span></div>
+</div></body></html>

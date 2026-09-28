@@ -1,0 +1,30 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="base.css">
+<style>
+.term { background: #0b0d12; border: 1px solid rgba(255,255,255,.1); border-radius: 14px; padding: 18px 22px; font: 500 24px/1.65 'JetBrains Mono', monospace; color: #cfd6e4; white-space: pre; }
+.g { color: #6ee7a8; } .r { color: #ff8f8f; } .a { color: #ffcf70; } .d { color: #7d869a; } .b { color: #7ea6ff; }
+</style></head><body>
+<div class="card" style="flex-direction: column; gap: 0">
+  <div class="kicker">xlsxlean check · macOS and Linux</div>
+  <h1 style="font-size: 60px">Check your own files. It names the rule.</h1>
+  <div style="display: flex; gap: 28px; margin-top: 44px; align-items: flex-start">
+    <div class="term" style="flex: 0 0 940px"><span class="d">$</span> ./xlsxlean check duplicate-filename.xlsx
+duplicate-filename.xlsx
+  <span class="r">✗</span> package       <span class="b">Package.check</span>
+  <span class="g">✓</span> spreadsheet   <span class="b">conformsCheck</span>
+  <span class="g">✓</span> workbook      <span class="b">Workbook.check</span>
+
+  where:
+    <span class="r">[names_unique]</span> xl/worksheets/sheet1.xml:
+      in the archive twice
+
+  verdict: <span class="r">breaks the spec</span></div>
+    <div style="flex: 1; display: flex; flex-direction: column; gap: 22px; padding-top: 6px">
+      <div class="stat" style="margin-top:0; flex-direction: column; gap: 22px">
+        <div style="font-size:20px"><b style="font-size:48px">352 files in 11 s</b>all of Apache POI's .xlsx test files</div>
+        <div style="font-size:20px"><b style="font-size:48px">316 of 333</b>readable ones follow the spec; the other 17 break it for real</div>
+        <div style="font-size:20px"><b style="font-size:48px">--json, --html</b>for scripts and bug reports</div>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><span><b>github.com/keithadler/xlsx-lean</b> · MIT</span><span>DEFLATE by lean-zip's verified decoder</span></div>
+</div></body></html>

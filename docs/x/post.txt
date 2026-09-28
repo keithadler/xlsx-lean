@@ -1,0 +1,21 @@
+Billions of people use spreadsheets every day, and most XLSX files are read by code, not by Excel: bank exports, payroll, lab results, pipelines. That code is mostly three open source readers: openpyxl (Python), calamine (Rust) and SheetJS (JavaScript).
+
+I wanted to know if they read XLSX correctly, so I wrote down what a valid XLSX file is, precisely enough for a computer to check, and tested them against it: 382 hostile files, plus all 418 real test files from Apache POI and calamine.
+
+What I found:
+
+- calamine crashes (a Rust panic) on three different files, including one from Apache POI's own test suite
+- openpyxl never finishes one of POI's XML bomb files. It was at 3 GB after 18 minutes
+- openpyxl silently drops a sheet whose link is broken, and silently throws away values under merged cells
+- openpyxl deletes every "x005F_" from shared-string text: the cell "ax005F_b" comes back as "ab"
+- one bad hyperlink ID makes openpyxl refuse the entire workbook
+- calamine and SheetJS open archives whose checksums fail and hand you the corrupted data without a word
+- put two copies of the same sheet in a file, and openpyxl and calamine read one while SheetJS reads the other
+- dates: openpyxl and calamine read serial 60 as the same day as serial 59, and SheetJS reads early dates a day off and ignores the 1904 date system
+- when a cell is written twice, all three silently keep the second value
+
+The spec is written in Lean because it has to be right before it can judge anyone else. The checkers are proved sound, so when a file breaks a rule, the tool names the rule and the cell. Testing it caught my own mistakes too: rules stricter than the standard, and a writer bug that would have turned your text "_x0041_" into "A".
+
+Check your own files: xlsxlean check file.xlsx
+
+MIT: github.com/keithadler/xlsx-lean

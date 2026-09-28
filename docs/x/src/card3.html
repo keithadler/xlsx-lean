@@ -1,0 +1,17 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="base.css"><style>
+.grid { gap: 22px; margin-top: 40px; } .f { padding: 26px 28px; }
+.f .t { font-size: 18px; } .f .h { font-size: 31px; margin-top: 10px; } .f .s { font-size: 20px; margin-top: 10px; }
+</style></head><body>
+<div class="card" style="flex-direction: column; gap: 0">
+  <div class="kicker">Silent changes to your data</div>
+  <h1 style="font-size: 64px">Worse: no error, different data.</h1>
+  <div class="grid">
+    <div class="f"><div class="t">the cell text <code>ax005F_b</code></div><div class="h">openpyxl reads <span class="bad">ab</span></div><div class="s">It deletes every <code>x005F_</code> from shared strings</div></div>
+    <div class="f"><div class="t">a sheet whose link is broken</div><div class="h">openpyxl <span class="bad">silently drops the sheet</span></div><div class="s">and opens the rest as if nothing were missing</div></div>
+    <div class="f"><div class="t">values under a merged range</div><div class="h">openpyxl <span class="bad">throws them away</span></div><div class="s">calamine and SheetJS keep them</div></div>
+    <div class="f"><div class="t">the same sheet in the file twice</div><div class="h">the readers <span class="warn">read different copies</span></div><div class="s">openpyxl and calamine the second, SheetJS the first (Apache POI's test file)</div></div>
+    <div class="f"><div class="t">cell A1 written twice, 1 then 2</div><div class="h">all three <span class="warn">silently keep the 2</span></div><div class="s">The spec rules it out, proved: <code>refs_nodup</code></div></div>
+    <div class="f"><div class="t">the text <code>_x0041_</code>, escaped as the standard says</div><div class="h">openpyxl and calamine <span class="warn">read <code style="color:#ffcf70">_x005F_x0041_</code></span></div><div class="s">in inline strings and sheet names (calamine everywhere); SheetJS gets it right</div></div>
+  </div>
+  <div class="foot"><span><b>github.com/keithadler/xlsx-lean</b> · MIT</span><span>openpyxl 3.1.5 · python-calamine 0.4.0 · SheetJS 0.18.5</span></div>
+</div></body></html>
