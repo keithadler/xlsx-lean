@@ -40,11 +40,17 @@ def base : Workbook := Example.workbook
 def withRows (rows : List Row) : Workbook :=
   { base with sheets := { Example.limits with rows } :: base.sheets.tail }
 
+def withLimits (f : Sheet → Sheet) : Workbook :=
+  { base with sheets := f Example.limits :: base.sheets.tail }
+
 def withSheetName (n : String) : Workbook :=
   { base with sheets := { Example.limits with name := n } :: base.sheets.tail }
 
 def oneCell (c : Cell) (extra : List String := []) : Workbook :=
   { sheets := [{ name := "Probe", rows := [⟨c.ref.row, [c]⟩] }], sst := extra, styleCount := 2 }
+
+def oneCellRow (cs : List Cell) : Workbook :=
+  { sheets := [{ name := "Probe", rows := [⟨1, cs⟩] }], sst := [], styleCount := 2 }
 
 def inl (s : String) : Workbook := oneCell ⟨⟨1, 1⟩, .inline s, 0, none⟩
 def shd (s : String) : Workbook := oneCell ⟨⟨1, 1⟩, .shared 0, 0, none⟩ [s]
@@ -96,6 +102,12 @@ def broken : List Case :=
         parts := lay.parts ++ [⟨["xl", "theme"], "theme1", ["bin"]⟩] } }
   , c "W13-same-cell-twice" "broken" "A1 written twice in one row, with 1 and then 2"
       (withRows [⟨1, [⟨⟨1, 1⟩, .number 1, 0, none⟩, ⟨⟨1, 1⟩, .number 2, 0, none⟩]⟩])
+  , c "W14-dimension-too-small" "broken" "dimension A1:B2 on a sheet with cells to C6"
+      (withLimits fun s => { s with dimension := some (Range.mk ⟨1, 1⟩ ⟨2, 2⟩) })
+  , c "W15-merges-overlap" "broken" "merged A1:B2 and B2:C3"
+      (withLimits fun s => { s with merges := [Range.mk ⟨1, 1⟩ ⟨2, 2⟩, Range.mk ⟨2, 2⟩ ⟨3, 3⟩] })
+  , c "W16-merge-backwards" "broken" "merged C3:A1, corners reversed"
+      (withLimits fun s => { s with merges := [Range.mk ⟨3, 3⟩ ⟨1, 1⟩] })
   , { name := "P09-names-differ-by-case", kind := "broken", what := "/xl/workbook.xml and /xl/Workbook.xml: one name to OPC"
       wb := base, pkg := { (wbRelsWith fun rs => rs ++ [⟨"rId98", .theme, ⟨[], "Workbook", ["xml"]⟩, false⟩]) with
         parts := lay.parts ++ [⟨["xl"], "Workbook", ["xml"]⟩] } }
@@ -131,6 +143,17 @@ def probes : List Case :=
       { sheets := (List.range' 1 255).map fun (i : Nat) => { name := s!"S{i}", rows := [⟨1, [⟨⟨1, 1⟩, .number (i : Int), 0, none⟩]⟩] }, sst := [], styleCount := 1 }
   , c "G19-formula-looking" "probe" "text =1+1 stored as a string" (inl "=1+1")
   , c "G20-empty-string" "probe" "an empty shared string" (shd "")
+  , c "G21-merges-and-dimension" "probe" "dimension A1:C6, merges A7:C7 and D1:D3"
+      (withLimits fun s => { s with
+        dimension := some (Range.mk ⟨1, 1⟩ ⟨4, 7⟩)
+        merges := [Range.mk ⟨1, 7⟩ ⟨3, 7⟩, Range.mk ⟨4, 1⟩ ⟨4, 3⟩] })
+  , c "W17-value-under-merge" "broken" "B1 holds a value under the merge A1:B1"
+      (withLimits fun s => { s with merges := [Range.mk ⟨1, 1⟩ ⟨2, 1⟩] })
+  , c "G22-decimals" "probe" "decimals 3.25, 1E-3, -6.02E23, and an error value"
+      (oneCellRow [⟨⟨1, 1⟩, .real 325 (-2), 0, none⟩, ⟨⟨2, 1⟩, .real 1 (-3), 0, none⟩,
+        ⟨⟨3, 1⟩, .real (-602) 21, 0, none⟩, ⟨⟨4, 1⟩, .error "#N/A", 0, none⟩])
+  , c "G23-formula-cached" "probe" "formulas with cached number and text results"
+      (oneCellRow [⟨⟨1, 1⟩, .number 2, 0, some "1+1"⟩, ⟨⟨2, 1⟩, .inline "ab", 0, some "\"a\"&\"b\""⟩])
   ]
 
 /-! ## Random well-formed workbooks -/

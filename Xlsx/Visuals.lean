@@ -91,6 +91,9 @@ def workbookJson (wb : Workbook) : Json :=
       ("ok", toJson (Sheet.check wb s)),
       ("cols", Json.arr ((List.range' 1 (maxc + 1)).map fun c => Json.str (colName c)).toArray),
       ("rows", toJson (maxr + 1)),
+      ("dimension", match s.dimension with | some d => Json.str d.toA1 | none => Json.null),
+      ("merges", Json.arr (s.merges.toArray.map fun m => Json.mkObj [("ref", m.toA1),
+        ("c1", toJson m.first.col), ("r1", toJson m.first.row), ("c2", toJson m.last.col), ("r2", toJson m.last.row)])),
       ("cells", Json.arr (s.rows.flatMap fun r => r.cells.map (cellJson wb.sst)).toArray)]
   Json.mkObj [("sheets", Json.arr sheets.toArray),
     ("sst", Json.arr (wb.sst.map Json.str).toArray), ("check", toJson wb.check)]

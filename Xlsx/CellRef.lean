@@ -331,4 +331,51 @@ theorem toA1_B7 : (CellRef.mk 2 7).toA1 = "B7" := by decide +kernel
 theorem toA1_last : (CellRef.mk maxCol maxRow).toA1 = "XFD1048576" := by decide +kernel
 theorem parseA1_last : parseA1 "XFD1048576" = some ⟨maxCol, maxRow⟩ := by decide +kernel
 
+/-! ## Ranges -/
+
+/-- A rectangle of cells, `A1:C6`: its top-left and bottom-right corners. -/
+structure Range where
+  first : CellRef
+  last : CellRef
+  deriving DecidableEq, Repr
+
+namespace Range
+
+def contains (r : Range) (c : CellRef) : Bool :=
+  r.first.col ≤ c.col && c.col ≤ r.last.col && r.first.row ≤ c.row && c.row ≤ r.last.row
+
+/-- Two rectangles share at least one cell. -/
+def overlaps (a b : Range) : Bool :=
+  a.first.col ≤ b.last.col && b.first.col ≤ a.last.col && a.first.row ≤ b.last.row && b.first.row ≤ a.last.row
+
+/-- Corners in order, both real cells. -/
+def Valid (r : Range) : Prop :=
+  r.first.Valid ∧ r.last.Valid ∧ r.first.col ≤ r.last.col ∧ r.first.row ≤ r.last.row
+
+instance (r : Range) : Decidable r.Valid := by unfold Valid; infer_instance
+
+def toA1 (r : Range) : String :=
+  if r.first = r.last then r.first.toA1 else r.first.toA1 ++ ":" ++ r.last.toA1
+
+/-- A cell in two rectangles means they overlap. -/
+theorem overlaps_of_contains {a b : Range} {c : CellRef}
+    (ha : a.contains c = true) (hb : b.contains c = true) : a.overlaps b = true := by
+  simp only [contains, overlaps, Bool.and_eq_true, decide_eq_true_eq] at ha hb ⊢
+  omega
+
+/-- Every valid rectangle overlaps itself. -/
+theorem overlaps_self {a : Range} (h : a.Valid) : a.overlaps a = true := by
+  obtain ⟨_, _, h1, h2⟩ := h
+  simp only [overlaps, Bool.and_eq_true, decide_eq_true_eq]
+  omega
+
+end Range
+
+/-- Read `A1:C6`, or a single cell `B2` as a one-cell range. -/
+def parseRange (s : String) : Option Range :=
+  match s.splitOn ":" with
+  | [a] => (parseA1 a).map fun c => ⟨c, c⟩
+  | [a, b] => do let f ← parseA1 a; let l ← parseA1 b; pure ⟨f, l⟩
+  | _ => none
+
 end Xlsx

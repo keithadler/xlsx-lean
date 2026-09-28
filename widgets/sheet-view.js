@@ -15,9 +15,18 @@ const KIND = {
 };
 const grid = 'rgba(127,127,127,0.28)';
 
+function colIndex(name) { let n = 0; for (const ch of name) n = n * 26 + (ch.charCodeAt(0) - 64); return n; }
+
 function Grid({ sheet, sel, setSel, sstHover }) {
   const byRef = {};
   for (const c of sheet.cells) byRef[c.ref] = c;
+  // merged ranges: the top-left cell spans, the others are not drawn
+  const span = {}, covered = new Set();
+  for (const m of sheet.merges || []) {
+    for (let r = m.r1; r <= m.r2; r++) for (let c = m.c1; c <= m.c2; c++)
+      if (r !== m.r1 || c !== m.c1) covered.add(c + ':' + r);
+    span[m.c1 + ':' + m.r1] = { colSpan: m.c2 - m.c1 + 1, rowSpan: m.r2 - m.r1 + 1, ref: m.ref };
+  }
   const head = { background: 'rgba(127,127,127,0.10)', fontWeight: 500, fontSize: 11, textAlign: 'center', padding: '3px 6px', border: `1px solid ${grid}`, ...muted };
   const rows = [];
   for (let r = 1; r < sheet.rows + 1; r++) {
@@ -25,17 +34,20 @@ function Grid({ sheet, sel, setSel, sstHover }) {
       h('td', { style: { ...head, minWidth: 26 } }, r),
       ...sheet.cols.map((col, ci) => {
         const ref = col + r, c = byRef[ref];
+        if (covered.has((ci + 1) + ':' + r)) return null;
+        const sp = span[(ci + 1) + ':' + r];
         const isSel = sel && sel.ref === ref;
         const lit = c && c.kind === 'shared' && sstHover !== null && +c.raw === sstHover;
         const k = c ? KIND[c.kind] : null;
         return h('td', {
-          key: ref, onMouseEnter: () => c && setSel(c),
+          key: ref, onMouseEnter: () => c && setSel(c), colSpan: sp ? sp.colSpan : 1, rowSpan: sp ? sp.rowSpan : 1,
+          title: sp ? 'merged ' + sp.ref : undefined,
           style: {
             border: `1px solid ${grid}`, padding: '4px 8px', fontSize: 12.5, whiteSpace: 'nowrap',
             maxWidth: 300, overflow: 'hidden', textOverflow: 'ellipsis', position: 'relative',
             textAlign: c && (c.value.kind === 'number') ? 'right' : c && c.value.kind === 'bool' ? 'center' : 'left',
             fontWeight: c && c.style === 1 ? 700 : 400,
-            background: lit ? TEAL + '33' : isSel ? 'rgba(37,99,235,0.14)' : 'transparent',
+            background: lit ? TEAL + '33' : isSel ? 'rgba(37,99,235,0.14)' : sp ? 'rgba(217,119,6,0.10)' : 'transparent',
             outline: isSel ? `2px solid ${BLUE}` : 'none', outlineOffset: -2, cursor: c ? 'pointer' : 'default',
           } },
           c ? c.value.text : '',
@@ -84,7 +96,9 @@ export default function SheetView(props) {
     h('div', { style: { display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'flex-start' } },
       h('div', { style: { ...box, flex: '1 1 440px', minWidth: 0 } },
         h('div', { style: { display: 'flex', justifyContent: 'space-between', fontSize: 11, marginBottom: 8, ...muted } },
-          h('span', { style: { fontFamily: mono } }, '/' + sheet.entry),
+          h('span', { style: { fontFamily: mono } }, '/' + sheet.entry
+            + (sheet.dimension ? '   dimension ' + sheet.dimension : '')
+            + ((sheet.merges || []).length ? '   merged ' + sheet.merges.map(m => m.ref).join(', ') : '')),
           h('span', null, Object.entries(counts).map(([k, v]) => `${v} ${KIND[k].label}`).join(' · '))),
         h('div', { style: { overflowX: 'auto' }, onMouseLeave: () => setSstHover(null) }, h(Grid, { sheet, sel, setSel, sstHover })),
         h('div', { style: { display: 'flex', gap: 2, marginTop: 8, borderTop: `1px solid ${grid}` } },

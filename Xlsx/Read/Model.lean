@@ -156,7 +156,7 @@ def richText (n : Node) : String :=
 
 def worksheetKnown : List String :=
   ["sheetPr", "dimension", "sheetViews", "sheetFormatPr", "cols", "sheetData", "pageMargins",
-   "pageSetup", "headerFooter", "printOptions", "sheetCalcPr", "extLst"]
+   "pageSetup", "headerFooter", "printOptions", "sheetCalcPr", "extLst", "mergeCells"]
 
 def parsePart (notes : Array Note) (name : String) (data : ByteArray) : Option Node × Array Note :=
   match parse data with
@@ -213,11 +213,22 @@ def loadSheet (sheetName : String) (entry : String) (root : Node) (notes : Array
         | other, _ => do notes := notes.push ⟨.error, place, s!"{a1}: unknown cell type t=\"{other}\""⟩; pure .empty
       cells := cells ++ [Cell.mk ref stored style formula]
     rows := rows ++ [⟨idx, cells⟩]
+  let mut dimension : Option Range := none
+  if let some d := root.child? "dimension" then
+    match (d.attr? "ref").bind parseRange with
+    | some r => dimension := some r
+    | none => notes := notes.push ⟨.error, place, s!"dimension ref {(d.attr? "ref").getD ""} is not a range"⟩
+  let mut merges : List Range := []
+  if let some mc := root.child? "mergeCells" then
+    for m in mc.childrenNamed "mergeCell" do
+      match (m.attr? "ref").bind parseRange with
+      | some r => merges := merges ++ [r]
+      | none => notes := notes.push ⟨.error, place, s!"mergeCell ref {(m.attr? "ref").getD ""} is not a range"⟩
   if shared > 0 then
     notes := notes.push ⟨.unmodeled, place, s!"{shared} shared formulas (kept as written, not expanded)"⟩
   if dates > 0 then
     notes := notes.push ⟨.unmodeled, place, s!"{dates} ISO date cells (t=\"d\"), read as text"⟩
-  return ({ name := sheetName, rows }, notes)
+  return ({ name := sheetName, rows, dimension, merges }, notes)
 
 def load (entries : Array ZipEntry) : Loaded := Id.run do
   let mut notes : Array Note := #[]

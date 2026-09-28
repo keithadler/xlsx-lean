@@ -17,7 +17,8 @@ def sst : List String :=
   , "Last column", "Its name", "Last row", "Last cell"                -- 3 4 5 6
   , "Every workbook lays out as a well-formed package"                -- 7
   , "colName_maxCol", "maxRow_eq", "toA1_last"                        -- 8 9 10
-  , "Workbook.toPackage_wellFormed", "Column", "Name" ]                -- 11 12 13
+  , "Workbook.toPackage_wellFormed", "Column", "Name"                  -- 11 12 13
+  , "Proved in Lean 4, re-checked by Tenet" ]                           -- 14
 
 def txt (col row i : Nat) (style := 0) : Cell := ⟨⟨col, row⟩, .shared i, style, none⟩
 def num (col row : Nat) (n : Int) : Cell := ⟨⟨col, row⟩, .number n, 0, none⟩
@@ -31,7 +32,10 @@ def limits : Sheet where
     , ⟨3, [txt 1 3 4, str 2 3 (colName maxCol), txt 3 3 8]⟩
     , ⟨4, [txt 1 4 5, num 2 4 1048576, txt 3 4 9]⟩
     , ⟨5, [txt 1 5 6, str 2 5 (CellRef.mk maxCol maxRow).toA1, txt 3 5 10]⟩
-    , ⟨6, [txt 1 6 7, ⟨⟨2, 6⟩, .bool true, 0, none⟩, txt 3 6 11]⟩ ]
+    , ⟨6, [txt 1 6 7, ⟨⟨2, 6⟩, .bool true, 0, none⟩, txt 3 6 11]⟩
+    , ⟨8, [txt 1 8 14 1]⟩ ]
+  dimension := some ⟨⟨1, 1⟩, ⟨3, 8⟩⟩
+  merges := [⟨⟨1, 8⟩, ⟨3, 8⟩⟩]
 
 def sampleColumns : List Nat := [1, 2, 26, 27, 28, 52, 53, 702, 703, 16384]
 

@@ -27,8 +27,14 @@ W13-same-cell-twice          FAIL   ok        DIFFERS   DIFFERS   DIFFERS
                                     openpyxl: Limits!A1: read 2, model '1'
                                     calamine: Limits!A1: read 2.0, model '1'
                                     sheetjs: Limits!A1: read 2, model '1'
+W14-dimension-too-small      FAIL   ok        ok        ok        ok       
+W15-merges-overlap           FAIL   ok        DIFFERS   ok        ok       
+                                    openpyxl: Limits!B1: read None, model 'Value'
+W16-merge-backwards          FAIL   ok        REJECTS   ok        ok       
 P09-names-differ-by-case     FAIL   ok        ok        ok        ok       
 P08-sheet-typed-styles       FAIL   ok        ok        ok        ok       
+W17-value-under-merge        FAIL   ok        DIFFERS   ok        ok       
+                                    openpyxl: Limits!B1: read None, model 'Value'
 
 == gap ==
 case                         ours   expat     openpyxl  calamine  sheetjs  
@@ -61,6 +67,10 @@ G18-many-sheets              pass   ok        ok        ok        ok
 G19-formula-looking          pass   ok        ok        ok        ok       
 G20-empty-string             pass   ok        ok        DIFFERS   ok       
                                     calamine: Probe!A1: read None, model ''
+G21-merges-and-dimension     pass   ok        ok        ok        ok       
+G22-decimals                 pass   ok        ok        DIFFERS   ok       
+                                    calamine: Probe!D1: read None, model '#N/A'
+G23-formula-cached           pass   ok        ok        ok        ok       
 
 == fuzz: 300 random well-formed workbooks ==
 expat     agrees on 300/300

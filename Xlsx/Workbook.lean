@@ -74,6 +74,10 @@ structure Row where
 structure Sheet where
   name : String
   rows : List Row
+  /-- `<dimension ref="A1:C6"/>`: the used range the sheet claims, if it says one. -/
+  dimension : Option Range := none
+  /-- `<mergeCell ref="A6:C6"/>`: merged rectangles. -/
+  merges : List Range := []
   deriving DecidableEq, Repr
 
 structure Workbook where
@@ -169,6 +173,16 @@ structure Sheet.WellFormed (wb : Workbook) (s : Sheet) : Prop where
   rows : ∀ r ∈ s.rows, r.WellFormed wb
   /-- Rows are written top to bottom, each row once. -/
   sorted : (s.rows.map (·.index)).Pairwise (· < ·)
+  /-- The claimed used range holds every cell: readers size their grid from it (**ECMA-376**). -/
+  dimension_covers : ∀ d, s.dimension = some d → ∀ r ∈ s.rows, ∀ c ∈ r.cells, d.contains c.ref = true
+  /-- Every merged range has its corners in order, inside the sheet (**ECMA-376**). -/
+  merges_valid : ∀ m ∈ s.merges, m.Valid
+  /-- No two merged ranges overlap: Excel drops overlapping merges as a repair (**Excel**). -/
+  merges_disjoint : s.merges.Pairwise (fun a b => a.overlaps b = false)
+  /-- Under a merge, only the top-left cell holds a value; the rest may carry a format.
+  Excel hides the others and openpyxl discards them, so readers would disagree (**Excel**). -/
+  merged_hidden_empty : ∀ m ∈ s.merges, ∀ r ∈ s.rows, ∀ c ∈ r.cells,
+    m.contains c.ref = true → c.ref ≠ m.first → c.stored = .empty
 
 structure Workbook.WellFormed (wb : Workbook) : Prop where
   has_sheet : wb.sheets ≠ []
@@ -232,6 +246,26 @@ theorem Sheet.WellFormed.refs_nodup {wb : Workbook} {s : Sheet} (h : s.WellForme
     s.refs.Nodup :=
   rows_refs_nodup h.rows h.sorted
 
+/-- **Every cell is in at most one merged range** of a well-formed sheet. -/
+theorem Sheet.WellFormed.merge_unique {wb : Workbook} {s : Sheet} (h : s.WellFormed wb) (c : CellRef) :
+    (s.merges.filter (·.contains c)).length ≤ 1 := by
+  have hp := h.merges_disjoint
+  generalize s.merges = ms at hp
+  induction ms with
+  | nil => simp
+  | cons m ms ih =>
+    rw [List.pairwise_cons] at hp
+    by_cases hm : m.contains c = true
+    · have hrest : ms.filter (·.contains c) = [] := by
+        rw [List.filter_eq_nil_iff]
+        intro b hb hbc
+        have := hp.1 b hb
+        rw [Range.overlaps_of_contains hm hbc] at this
+        cases this
+      simp [List.filter_cons, hm, hrest]
+    · simp only [List.filter_cons, hm, Bool.false_eq_true, ite_false]
+      exact ih hp.2
+
 /-- The value at a reference, found the way a reader finds it. -/
 def Sheet.value (sst : List String) (s : Sheet) (ref : CellRef) : Option Value := do
   let row ← s.rows.find? (·.index == ref.row)
@@ -273,12 +307,30 @@ def Row.check (wb : Workbook) (row : Row) : Bool :=
   0 < row.index && row.index ≤ maxRow && row.cells.all (Cell.check wb row)
   && increasing (row.cells.map (·.ref.col))
 
+/-- No two in the list overlap, checked pair by pair. -/
+def disjointB : List Range → Bool
+  | [] => true
+  | m :: ms => ms.all (fun b => !m.overlaps b) && disjointB ms
+
+theorem disjointB_sound : ∀ {ms : List Range}, disjointB ms = true →
+    ms.Pairwise (fun a b => a.overlaps b = false)
+  | [], _ => List.Pairwise.nil
+  | m :: ms, h => by
+    simp only [disjointB, Bool.and_eq_true, List.all_eq_true, Bool.not_eq_eq_eq_not, Bool.not_true] at h
+    exact List.pairwise_cons.2 ⟨h.1, disjointB_sound h.2⟩
+
 def Sheet.check (wb : Workbook) (s : Sheet) : Bool :=
   !s.name.toList.isEmpty && utf16Length s.name ≤ 31
   && s.name.toList.all (fun ch => !forbiddenInSheetName.contains ch && xmlChar ch)
   && s.name.toList.head? != some '\'' && s.name.toList.getLast? != some '\''
   && s.key != "history".toList
   && s.rows.all (Row.check wb) && increasing (s.rows.map (·.index))
+  && (match s.dimension with
+      | some d => s.rows.all fun r => r.cells.all fun c => d.contains c.ref
+      | none => true)
+  && s.merges.all (fun m => decide m.Valid) && disjointB s.merges
+  && s.merges.all (fun m => s.rows.all fun r => r.cells.all fun c =>
+      !m.contains c.ref || c.ref == m.first || c.stored == .empty)
 
 def Workbook.check (wb : Workbook) : Bool :=
   !wb.sheets.isEmpty && wb.sheets.all (Sheet.check wb)
@@ -316,13 +368,31 @@ theorem Row.check_sound {wb row} (h : Row.check wb row = true) : row.WellFormed 
 theorem Sheet.check_sound {wb s} (h : Sheet.check wb s = true) : s.WellFormed wb := by
   simp only [Sheet.check, Bool.and_eq_true, decide_eq_true_eq, List.all_eq_true,
     List.isEmpty_eq_false_iff, Bool.not_eq_eq_eq_not, Bool.not_true, bne_iff_ne, ne_eq] at h
-  obtain ⟨⟨⟨⟨⟨⟨⟨h1, h2⟩, h3⟩, hq1⟩, hq2⟩, hh⟩, h4⟩, h5⟩ := h
-  refine ⟨h1, h2, ?_, ⟨hq1, hq2⟩, hh, fun r hr => Row.check_sound (h4 r hr), increasing_sound h5⟩
-  intro ch hch
-  obtain ⟨hf, hx⟩ := h3 ch hch
-  refine ⟨fun hbad => ?_, hx⟩
-  rw [List.contains_iff_mem.2 hbad] at hf
-  cases hf
+  obtain ⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨⟨h1, h2⟩, h3⟩, hq1⟩, hq2⟩, hh⟩, h4⟩, h5⟩, hd⟩, hm⟩, hmd⟩, hme⟩ := h
+  exact {
+    name_nonempty := h1
+    name_short := h2
+    name_chars := fun ch hch => by
+      obtain ⟨hf, hx⟩ := h3 ch hch
+      refine ⟨fun hbad => ?_, hx⟩
+      rw [List.contains_iff_mem.2 hbad] at hf
+      cases hf
+    name_quotes := ⟨hq1, hq2⟩
+    name_reserved := hh
+    rows := fun r hr => Row.check_sound (h4 r hr)
+    sorted := increasing_sound h5
+    dimension_covers := fun d hdim r hr c hc => by
+      rw [hdim] at hd
+      simp only [List.all_eq_true] at hd
+      exact hd r hr c hc
+    merges_valid := fun m hmem => hm m hmem
+    merges_disjoint := disjointB_sound hmd
+    merged_hidden_empty := fun m hm' r hr c hc hin hne => by
+      have := hme m hm' r hr c hc
+      simp only [hin, Bool.not_true, Bool.false_or, Bool.or_eq_true, beq_iff_eq] at this
+      rcases this with h | h
+      · exact absurd h hne
+      · exact h }
 
 /-- **The checker is sound**: a workbook it accepts follows every rule. -/
 theorem Workbook.check_sound {wb : Workbook} (h : wb.check = true) : wb.WellFormed := by

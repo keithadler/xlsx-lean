@@ -87,10 +87,16 @@ def Cell.xml (c : Cell) : String :=
     else s!"<c r=\"{r}\"{s} t=\"str\">{f}<v>{xmlEscape t}</v></c>"
 
 def Sheet.xml (s : Sheet) : String :=
-  xmlHeader ++ s!"<worksheet xmlns=\"{mainNs}\"><sheetData>"
+  xmlHeader ++ s!"<worksheet xmlns=\"{mainNs}\">"
+  ++ (match s.dimension with | some d => s!"<dimension ref=\"{d.toA1}\"/>" | none => "")
+  ++ "<sheetData>"
   ++ String.join (s.rows.map fun r =>
       s!"<row r=\"{numeral r.index}\">" ++ String.join (r.cells.map Cell.xml) ++ "</row>")
-  ++ "</sheetData></worksheet>"
+  ++ "</sheetData>"
+  ++ (if s.merges.isEmpty then "" else
+      s!"<mergeCells count=\"{s.merges.length}\">"
+      ++ String.join (s.merges.map fun m => s!"<mergeCell ref=\"{m.toA1}\"/>") ++ "</mergeCells>")
+  ++ "</worksheet>"
 
 def Workbook.sstXml (wb : Workbook) : String :=
   xmlHeader ++ s!"<sst xmlns=\"{mainNs}\" count=\"{wb.sst.length}\" uniqueCount=\"{wb.sst.length}\">"

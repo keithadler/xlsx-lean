@@ -455,6 +455,78 @@
   }
  },
  {
+  "name": "W14-dimension-too-small",
+  "kind": "broken",
+  "what": "dimension A1:B2 on a sheet with cells to C6",
+  "ours": false,
+  "failed": [
+   "workbook_check"
+  ],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "W15-merges-overlap",
+  "kind": "broken",
+  "what": "merged A1:B2 and B2:C3",
+  "ours": false,
+  "failed": [
+   "workbook_check"
+  ],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "differs",
+   "diffs": [
+    "Limits!B1: read None, model 'Value'",
+    "Limits!A2: read None, model 'Last column'",
+    "Limits!B2: read None, model '16384'",
+    "Limits!C2: read None, model 'colName_maxCol'",
+    "Limits!B3: read None, model 'XFD'"
+   ],
+   "count": 6
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "W16-merge-backwards",
+  "kind": "broken",
+  "what": "merged C3:A1, corners reversed",
+  "ours": false,
+  "failed": [
+   "workbook_check"
+  ],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "rejects",
+   "error": "ValueError: Unable to read workbook: could not read worksheets from out/lab/W16-merge-backwards.xlsx.\nThis is most probably because the workbook source files contain some invalid XML.\nPlease see the e"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
   "name": "P09-names-differ-by-case",
   "kind": "broken",
   "what": "/xl/workbook.xml and /xl/Workbook.xml: one name to OPC",
@@ -915,6 +987,92 @@
     "Probe!A1: read None, model ''"
    ],
    "count": 1
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "G21-merges-and-dimension",
+  "kind": "probe",
+  "what": "dimension A1:C6, merges A7:C7 and D1:D3",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "W17-value-under-merge",
+  "kind": "broken",
+  "what": "B1 holds a value under the merge A1:B1",
+  "ours": false,
+  "failed": [
+   "workbook_check"
+  ],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "differs",
+   "diffs": [
+    "Limits!B1: read None, model 'Value'"
+   ],
+   "count": 1
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "G22-decimals",
+  "kind": "probe",
+  "what": "decimals 3.25, 1E-3, -6.02E23, and an error value",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "differs",
+   "diffs": [
+    "Probe!D1: read None, model '#N/A'"
+   ],
+   "count": 1
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "G23-formula-cached",
+  "kind": "probe",
+  "what": "formulas with cached number and text results",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "ok"
   },
   "sheetjs": {
    "status": "ok"

@@ -127,6 +127,20 @@ def workbookProblems (wb : Workbook) (sheetEntries : Array (String × String)) :
           if c.ref.col ≤ p then
             out := out.push ⟨"sorted", s!"{place}!{c.ref.toA1}", if c.ref.col == p then "the same cell again" else s!"written after column {p}"⟩
         prevCol := some c.ref.col
+    if let some d := s.dimension then
+      let outside := s.rows.flatMap fun r => r.cells.filter fun c => !d.contains c.ref
+      unless outside.isEmpty do
+        out := out.push ⟨"dimension_covers", place, s!"dimension {d.toA1} leaves out {outside.length} cell(s), first {(outside.head?.map (·.ref.toA1)).getD ""}"⟩
+    for m in s.merges do
+      unless decide m.Valid do out := out.push ⟨"merges_valid", s!"{place}!{m.toA1}", "corners out of order, or outside the sheet"⟩
+    for m in s.merges do
+      for r in s.rows do
+        for c in r.cells do
+          if m.contains c.ref && c.ref != m.first && c.stored != .empty then
+            out := out.push ⟨"merged_hidden_empty", s!"{place}!{c.ref.toA1}", s!"a value under the merge {m.toA1}, which only shows {m.first.toA1}"⟩
+    for (i, m) in (List.range s.merges.length).zip s.merges do
+      for b in s.merges.drop (i + 1) do
+        if m.overlaps b then out := out.push ⟨"merges_disjoint", s!"{place}!{m.toA1}", s!"overlaps the merge {b.toA1}"⟩
   let _ := sheetEntries
   return out
 

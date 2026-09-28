@@ -22,8 +22,18 @@ def col_row(ref):
 def same(expected, got):
     """Does a reader's value match the model's?"""
     t = expected["t"]
-    if t == "missing":
-        return got is None
+    if t == "missing" or t == "empty":
+        return got is None or got == ""
+    if t == "r":
+        if isinstance(got, bool) or not isinstance(got, (int, float)):
+            return False
+        return float(f"{expected['m']}e{expected['e']}") == float(got)
+    if t == "e":
+        codes = {0x00: "#NULL!", 0x07: "#DIV/0!", 0x0F: "#VALUE!", 0x17: "#REF!", 0x1D: "#NAME?",
+                 0x24: "#NUM!", 0x2A: "#N/A", 0x2B: "#GETTING_DATA"}
+        if isinstance(got, int) and not isinstance(got, bool):
+            got = codes.get(got, got)
+        return str(got) == expected["v"] or str(got).upper() == expected["v"].upper()
     if t == "s":
         return isinstance(got, str) and got == expected["v"]
     if t == "b":
@@ -49,7 +59,7 @@ def compare(case, sheets):
         for c in s["cells"]:
             g = got.get(c["ref"])
             if not same(c["value"], g):
-                v = c["value"].get("v")
+                v = c["value"].get("v", c["value"].get("m"))
                 diffs.append(f"{s['name']}!{c['ref']}: read {g!r:.60}, model {v!r:.60}")
     return diffs
 
