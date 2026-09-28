@@ -59,7 +59,7 @@ The verdict comes from the checkers that are proved sound. The "where" list is a
 
 | File (Apache POI test data) | What happened |
 |---|---|
-| `54764.xlsx`, `54764-2.xlsx`: XML entity bombs | **openpyxl spins until killed** (3 GB after 18 minutes; its docs recommend installing `defusedxml`, which is not a dependency); calamine refuses them in 0.1 s; SheetJS opens them. `xlsxlean` refuses any DTD. |
+| `54764.xlsx`, `54764-2.xlsx`: XML entity bombs | **openpyxl spins until killed** on Apple's Python 3.9 (3 GB after 18 minutes; its expat is older than 2.4, and openpyxl's docs recommend installing `defusedxml`, which is not a dependency); calamine refuses them in 0.1 s; SheetJS opens them. `xlsxlean` refuses any DTD. |
 | `poc-xmlbomb.xlsx`, `poc-xmlbomb-empty.xlsx` | openpyxl expands the entities and opens them (5 s) |
 | `sample-beta.xlsx`: shared strings in a namespace the standard never used | **calamine crashes** (a panic: index out of bounds), its third crash in these tests |
 | two archives whose CRC-32 checks fail (`unzip -t` agrees) | **calamine and SheetJS open them without a word**; `xlsxlean` says which entry is damaged |
@@ -141,6 +141,16 @@ Cells can hold integers, decimals (kept exactly as written, `m × 10^e`), text (
 | the same part in the archive twice (Apache POI's `duplicate-filename.xlsx`) | **the readers read different copies**: openpyxl and calamine the second (openpyxl gets an empty cell, calamine an error), SheetJS the first (`v1`) |
 
 Of the 44 broken files, the readers accepted 25 without any complaint. These include a column past `XFD`, a 32-character sheet name, a workbook with no sheets, two main documents, a part with no content type, and two part names that differ only in case. The full table is in [docs/adversarial/report.txt](docs/adversarial/report.txt).
+
+### In the latest versions (rechecked 2026-09-27)
+
+The tables above are from openpyxl 3.1.5, python-calamine 0.4.0 and SheetJS 0.18.5. Rerun against the latest releases (openpyxl 3.1.5, python-calamine 0.8.2, SheetJS 0.20.3, and calamine's `master`):
+
+- **Fixed:** calamine no longer crashes on any of the three files, and decodes `_x005F_` in shared and inline strings. SheetJS 0.20.3 reads serials 1 to 59 and the 1904 system correctly (with `UTC: true`), and leaves serial 60 as the number 60. But `npm install xlsx` still installs 0.18.5, which has the date bugs; 0.20.3 comes from SheetJS's own CDN.
+- **Depends on Python:** the openpyxl XML-bomb hang needs an expat older than 2.4. Apple's Python 3.9 ships expat 2.2.8 and hangs; Python 3.13 ships 2.7.4 and refuses the bomb in 0.1 seconds.
+- **Still there:** openpyxl deletes `x005F_` from shared strings ([#2099](https://foss.heptapod.net/openpyxl/openpyxl/-/issues/2099)), leaves other escapes undecoded ([#1410](https://foss.heptapod.net/openpyxl/openpyxl/-/issues/1410)), silently drops a sheet whose relationship is missing, discards values under merges, and refuses a whole workbook over one dangling reference ([#2278](https://foss.heptapod.net/openpyxl/openpyxl/-/issues/2278), [#1417](https://foss.heptapod.net/openpyxl/openpyxl/-/issues/1417)). calamine and SheetJS open archives whose CRC-32 checks fail. The readers still read different copies of a duplicated part, and all three keep the second of two values for one cell.
+- **calamine, reported and in review upstream:** a cell reference past `u32` wraps around, so a value written at `A4294967297` reads back at `A1`, and a reference like `AAAAAAAB1` makes calamine allocate a range four billion columns wide ([#694](https://github.com/tafia/calamine/issues/694), fixes in [#695](https://github.com/tafia/calamine/pull/695), [#696](https://github.com/tafia/calamine/pull/696), [#697](https://github.com/tafia/calamine/pull/697)). A formula's cached text result was not unescaped: fixed in [tafia/calamine#727](https://github.com/tafia/calamine/pull/727), from this project.
+- **New in SheetJS 0.20.3** (0.18.5 read both correctly): a carriage return written as `&#13;` in a shared string is dropped, and a formula result `_x005F_x0042_` is unescaped twice, to `B`.
 
 ### What it found in the spec
 
