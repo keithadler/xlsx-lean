@@ -201,6 +201,7 @@ To see the pictures, open the folder in [Lean Studio](https://github.com/keithad
 - **The XML text.** The writer renders the model to XML and nothing about that step is proved; four readers check it on every corpus file.
 - **The model is a subset of SpreadsheetML.** It does not describe merged cells, dates as dates (they are numbers with a date format), number formats, rich text formatting, tables, charts, drawings, defined names or comments; the reader lists them as not modeled. Formulas are kept as written, not evaluated. Shared formulas are not expanded.
 - **Lean strings are Unicode scalar values,** so the unpaired surrogates a real file can contain cannot be represented at all.
+- **Memory.** The reader holds each part's whole XML tree: a sheet of 500,000 cells (100,000 rows) checks in about 3.5 seconds but takes 700 MB. openpyxl reads the same file in 4.1 seconds; calamine in 0.4.
 - **Excel itself was not in the loop.** Its limits come from Microsoft's published specifications, not from running Excel.
 
 ## Layout

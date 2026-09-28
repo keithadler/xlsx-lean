@@ -170,7 +170,7 @@ def loadSheet (sheetName : String) (entry : String) (root : Node) (notes : Array
   let extra := root.children.filter (fun k => !worksheetKnown.contains k.name) |>.map (·.name)
   unless extra.isEmpty do
     notes := notes.push ⟨.unmodeled, place, ", ".intercalate extra.toList⟩
-  let mut rows : List Row := []
+  let mut rows : Array Row := #[]
   let mut prevRow := 0
   let some data := root.child? "sheetData" | return ({ name := sheetName, rows := [] }, notes)
   let mut shared := 0
@@ -180,7 +180,7 @@ def loadSheet (sheetName : String) (entry : String) (root : Node) (notes : Array
       | some r => r.toNat?.getD 0
       | none => prevRow + 1
     prevRow := idx
-    let mut cells : List Cell := []
+    let mut cells : Array Cell := #[]
     let mut prevCol := 0
     for cn in rn.childrenNamed "c" do
       let ref : Option CellRef := match cn.attr? "r" with
@@ -211,8 +211,8 @@ def loadSheet (sheetName : String) (entry : String) (root : Node) (notes : Array
           | none => do notes := notes.push ⟨.error, place, s!"{a1}: {v} is not a number"⟩; pure .empty
         | "n", none | "s", none | "b", none | "e", none | "str", none | "d", none => pure .empty
         | other, _ => do notes := notes.push ⟨.error, place, s!"{a1}: unknown cell type t=\"{other}\""⟩; pure .empty
-      cells := cells ++ [Cell.mk ref stored style formula]
-    rows := rows ++ [⟨idx, cells⟩]
+      cells := cells.push (Cell.mk ref stored style formula)
+    rows := rows.push ⟨idx, cells.toList⟩
   let mut dimension : Option Range := none
   if let some d := root.child? "dimension" then
     match (d.attr? "ref").bind parseRange with
@@ -228,7 +228,7 @@ def loadSheet (sheetName : String) (entry : String) (root : Node) (notes : Array
     notes := notes.push ⟨.unmodeled, place, s!"{shared} shared formulas (kept as written, not expanded)"⟩
   if dates > 0 then
     notes := notes.push ⟨.unmodeled, place, s!"{dates} ISO date cells (t=\"d\"), read as text"⟩
-  return ({ name := sheetName, rows, dimension, merges }, notes)
+  return ({ name := sheetName, rows := rows.toList, dimension, merges }, notes)
 
 def load (entries : Array ZipEntry) : Loaded := Id.run do
   let mut notes : Array Note := #[]
