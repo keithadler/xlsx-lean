@@ -47,6 +47,8 @@ And one from the corpus, where a shared-string index runs past the table (the fi
     [shared_ok] Limits!A1: shared string 99; the table has 14
 ```
 
+`./xlsxlean check --html report.html file.xlsx` writes the same report as one page to share (the verdict, where, the package and the sheets), drawn by the same code as the Lean Studio widgets. It is the thing to attach to a bug report.
+
 The verdict comes from the checkers that are proved sound. The "where" list is a second function that restates the same rules one violation at a time; on every corpus file it lists nothing exactly when the checkers say yes. `--json` gives the same report as JSON, and the exit code is 1 if any file breaks the spec. Anything the reader reads but the model does not describe (merged cells, drawings, charts) is listed under notes, never dropped silently.
 
 **On calamine's 66 test files:** 62 of the 64 readable ones follow the spec. The two that do not are real problems: one carries a macOS `.DS_Store` with no content type, and one names its entries with Windows backslashes (`docProps\app.xml`), which ZIP and OPC forbid, so nothing leads to its workbook. The two unreadable ones are a password-protected workbook (an OLE file, not a ZIP) and one whose relationships part decompresses to 699 bytes where its directory says 697. Files written by openpyxl and SheetJS, compressed or not, follow the spec.

@@ -74,12 +74,58 @@ def widgetJson (f : String) : IO UInt32 := do
       | j => j
     IO.println (Json.mkObj [("report", report),
       ("package", Visuals.packageJson l.pkg f l.wb.sheets.length),
-      ("workbook", Visuals.workbookJsonCapped l.wb 400)]).compress
+      ("workbook", Visuals.workbookJsonCapped l.wb 400 f)]).compress
     return if ok then 0 else 1
+
+/-- A widget module, made to run on a plain page: React from the page, no RPC. -/
+def standalone (name src : String) : String :=
+  let src := src.replace "import * as React from 'react';" "const React = window.React;"
+  let src := src.replace "import { useRpcSession } from '@leanprover/infoview';"
+    "const useRpcSession = () => ({ call: () => Promise.reject(new Error('this page is not connected to Lean')) });"
+  let src := src.replace "export default function" s!"window.{name} = function"
+  s!"<script>(function()\{\n{src}\n})();</script>"
+
+def htmlPage (title : String) (data : Json) : String :=
+  let esc (j : Json) := (j.compress.replace "</" "<\\/")
+  "<!doctype html><html lang=\"en\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">"
+  ++ s!"<title>{xmlEscape title}</title>"
+  ++ "<style>:root{--vscode-editor-foreground:#1f2328;--bg:#ffffff;color-scheme:light dark}"
+  ++ "@media (prefers-color-scheme: dark){:root{--vscode-editor-foreground:#e6e8ee;--bg:#15171c}}"
+  ++ "body{margin:0;background:var(--bg);color:var(--vscode-editor-foreground);font-family:system-ui,sans-serif}"
+  ++ "main{max-width:1180px;margin:0 auto;padding:24px 16px;display:flex;flex-direction:column;gap:22px}"
+  ++ "footer{font-size:12px;opacity:.65;padding:8px 0 24px}</style>"
+  ++ "<script src=\"https://cdnjs.cloudflare.com/ajax/libs/react/18.3.1/umd/react.production.min.js\"></script>"
+  ++ "<script src=\"https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.3.1/umd/react-dom.production.min.js\"></script>"
+  ++ standalone "CheckReport" (include_str "widgets" / "check-report.js")
+  ++ standalone "PackageMap" (include_str "widgets" / "package-map.js")
+  ++ standalone "SheetView" (include_str "widgets" / "sheet-view.js")
+  ++ "</head><body><main><div id=\"report\"></div><div id=\"package\"></div><div id=\"sheets\"></div>"
+  ++ "<footer>Made by xlsxlean from github.com/keithadler/xlsx-lean. The verdict comes from checkers proved sound in Lean.</footer></main>"
+  ++ s!"<script>const DATA = {esc data};"
+  ++ "const h = React.createElement; const mount = (id, C, p) => ReactDOM.createRoot(document.getElementById(id)).render(h(C, p));"
+  ++ "mount('report', CheckReport, DATA.report); if (DATA.package) { mount('package', PackageMap, DATA.package); mount('sheets', SheetView, DATA.workbook); }</script>"
+  ++ "</body></html>"
+
+/-- One file as a page: `xlsxlean check --html report.html file.xlsx`. -/
+def htmlReport (out f : String) : IO UInt32 := do
+  let (data, code) ← match ← Read.loadFile f with
+    | .error e => pure (Json.mkObj [("report", Json.mkObj [("path", f), ("unreadable", e)])], (1 : UInt32))
+    | .ok l =>
+      let v := l.verdict
+      let ok := v.ok && (l.notes.filter (·.severity == .error)).isEmpty
+      let report := match Visuals.checkJson f l with
+        | .obj kvs => Json.obj (kvs.insert "ok" (toJson ok))
+        | j => j
+      pure (Json.mkObj [("report", report), ("package", Visuals.packageJson l.pkg f l.wb.sheets.length),
+        ("workbook", Visuals.workbookJsonCapped l.wb 2000 f)], if ok then 0 else 1)
+  IO.FS.writeFile out (htmlPage s!"{f}: xlsxlean" data)
+  IO.println s!"wrote {out}"
+  return code
 
 /-- Check real files: `xlsxlean check [--json] file.xlsx ...`. Exit 1 if any breaks the spec. -/
 def check (args : List String) : IO UInt32 := do
   if let ["--widget", f] := args then return ← widgetJson f
+  if let ["--html", out, f] := args then return ← htmlReport out f
   let json := args.contains "--json"
   let files := args.filter (· != "--json")
   let mut bad := 0
@@ -100,6 +146,7 @@ def check (args : List String) : IO UInt32 := do
 def usage : String := "xlsxlean: the XLSX format as a Lean proof, and a checker for real files.
 
   xlsxlean check [--json] FILE.xlsx ...   check files against the spec; exit 1 if any breaks it
+  xlsxlean check --html OUT.html FILE     the same, as one page to share: verdict, package, sheets
   xlsxlean write [PATH]                   write the example workbook (default out/example.xlsx)
   xlsxlean lab [DIR] [N]                  write the adversarial corpus with N random workbooks
   xlsxlean help                           this

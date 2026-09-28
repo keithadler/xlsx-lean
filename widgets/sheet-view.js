@@ -21,8 +21,20 @@ function Grid({ sheet, sel, setSel, sstHover }) {
   const byRef = {};
   for (const c of sheet.cells) byRef[c.ref] = c;
   // merged ranges: the top-left cell spans, the others are not drawn
-  const span = {}, covered = new Set();
+  // a merge that hides a value is not drawn merged: its cells are outlined, so the value shows
+  const span = {}, covered = new Set(), hiding = {};
+  const byPos = {};
+  for (const c of sheet.cells) byPos[c.col + ':' + c.row] = c;
   for (const m of sheet.merges || []) {
+    let hides = false;
+    for (let r = m.r1; r <= m.r2; r++) for (let c = m.c1; c <= m.c2; c++) {
+      const x = byPos[c + ':' + r];
+      if ((r !== m.r1 || c !== m.c1) && x && x.kind !== 'empty') hides = true;
+    }
+    if (hides) {
+      for (let r = m.r1; r <= m.r2; r++) for (let c = m.c1; c <= m.c2; c++) hiding[c + ':' + r] = m.ref;
+      continue;
+    }
     for (let r = m.r1; r <= m.r2; r++) for (let c = m.c1; c <= m.c2; c++)
       if (r !== m.r1 || c !== m.c1) covered.add(c + ':' + r);
     span[m.c1 + ':' + m.r1] = { colSpan: m.c2 - m.c1 + 1, rowSpan: m.r2 - m.r1 + 1, ref: m.ref };
@@ -41,14 +53,14 @@ function Grid({ sheet, sel, setSel, sstHover }) {
         const k = c ? KIND[c.kind] : null;
         return h('td', {
           key: ref, onMouseEnter: () => c && setSel(c), colSpan: sp ? sp.colSpan : 1, rowSpan: sp ? sp.rowSpan : 1,
-          title: sp ? 'merged ' + sp.ref : undefined,
+          title: sp ? 'merged ' + sp.ref : hiding[(ci + 1) + ':' + r] ? 'under the merge ' + hiding[(ci + 1) + ':' + r] + ', which shows only its top-left cell' : undefined,
           style: {
             border: `1px solid ${grid}`, padding: '4px 8px', fontSize: 12.5, whiteSpace: 'nowrap',
             maxWidth: 300, overflow: 'hidden', textOverflow: 'ellipsis', position: 'relative',
             textAlign: c && (c.value.kind === 'number') ? 'right' : c && c.value.kind === 'bool' ? 'center' : 'left',
             fontWeight: c && c.style === 1 ? 700 : 400,
             background: lit ? TEAL + '33' : isSel ? 'rgba(37,99,235,0.14)' : sp ? 'rgba(217,119,6,0.10)' : 'transparent',
-            outline: isSel ? `2px solid ${BLUE}` : 'none', outlineOffset: -2, cursor: c ? 'pointer' : 'default',
+            outline: isSel ? `2px solid ${BLUE}` : hiding[(ci + 1) + ':' + r] ? `2px dashed ${AMBER}` : 'none', outlineOffset: -2, cursor: c ? 'pointer' : 'default',
           } },
           c ? c.value.text : '',
           k ? h('span', { title: k.label, style: { position: 'absolute', top: 0, right: 0, width: 0, height: 0, borderTop: `7px solid ${k.color}`, borderLeft: '7px solid transparent' } }) : null);
@@ -90,7 +102,7 @@ export default function SheetView(props) {
   const pointed = sel && sel.kind === 'shared' ? +sel.raw : null;
   return h('div', { style: { fontFamily: 'var(--vscode-font-family, system-ui, sans-serif)', color: fg, display: 'flex', flexDirection: 'column', gap: 10 } },
     h('div', { style: { display: 'flex', alignItems: 'baseline', gap: 12, flexWrap: 'wrap' } },
-      h('div', { style: { fontSize: 15, fontWeight: 700 } }, 'example.xlsx, as a reader sees it'),
+      h('div', { style: { fontSize: 15, fontWeight: 700 } }, (props.title || 'example.xlsx') + ', as a reader sees it'),
       h('div', { style: { fontSize: 12, color: props.check ? GREEN : '#dc2626' } },
         props.check ? '✓ Workbook.check = true, so Workbook.WellFormed' : '✗ Workbook.check = false')),
     h('div', { style: { display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'flex-start' } },

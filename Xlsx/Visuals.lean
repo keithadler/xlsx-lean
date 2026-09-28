@@ -31,7 +31,7 @@ def colTraceRpc (p : NatParam) : RequestM (RequestTask Json) :=
 @[server_rpc_method]
 def layoutRpc (p : NatParam) : RequestM (RequestTask Json) :=
   let n := max 1 (min p.n 40)
-  return .pure (packageJson (layout n) s!"layout {n}: a workbook with {n} sheet{if n == 1 then "" else "s"}" n)
+  return .pure (packageJson (layout n) s!"layout {n}: a workbook with {n} sheet{if n == 1 then "" else "s"}" n true)
 
 /-! ## The widgets -/
 
@@ -96,7 +96,7 @@ Put the cursor on each line. -/
 
 /- The package of the example file: every entry, its content type, every relationship.
 The slider lays out a workbook with any number of sheets, asked of Lean live. -/
-#widget PackageMap with packageJson Example.workbook.toPackage "example.xlsx" Example.workbook.sheets.length
+#widget PackageMap with packageJson Example.workbook.toPackage "example.xlsx" Example.workbook.sheets.length true
 
 /- The two sheets as a reader sees them, with the shared strings they point into. -/
 #widget SheetView with workbookJson Example.workbook

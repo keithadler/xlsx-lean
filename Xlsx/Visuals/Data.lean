@@ -42,7 +42,7 @@ def sourceJson : Source → Json
   | .package => "package"
   | .part p => p.entryName
 
-def packageJson (p : Package) (title : String) (sheets : Nat) : Json :=
+def packageJson (p : Package) (title : String) (sheets : Nat) (interactive : Bool := false) : Json :=
   let parts := p.allParts.map fun n =>
     let ct := p.contentType n
     let via := if (p.overrides.lookup n).isSome then "Override" else
@@ -57,7 +57,7 @@ def packageJson (p : Package) (title : String) (sheets : Nat) : Json :=
         ("written", r.target.renderRelative)]).toArray)]
   Json.mkObj [("title", title), ("parts", Json.arr parts.toArray), ("rels", Json.arr rels.toArray),
     ("defaults", Json.arr (p.defaults.map fun (e, t) => Json.mkObj [("ext", e), ("type", t)]).toArray),
-    ("check", toJson p.check), ("conforms", toJson (conformsCheck p sheets)),
+    ("check", toJson p.check), ("conforms", toJson (conformsCheck p sheets)), ("interactive", toJson interactive),
     ("orphans", toJson p.orphanCheck)]
 
 def cellJson (sst : List String) (c : Cell) : Json :=
@@ -80,7 +80,7 @@ def cellJson (sst : List String) (c : Cell) : Json :=
   Json.mkObj [("ref", c.ref.toA1), ("col", toJson c.ref.col), ("row", toJson c.ref.row), ("kind", kind),
     ("raw", raw), ("value", value), ("style", toJson c.style), ("xml", c.xml)]
 
-def workbookJson (wb : Workbook) : Json :=
+def workbookJson (wb : Workbook) (title : String := "example.xlsx") : Json :=
   let sheets := ((sheetNums wb.sheets.length).zip wb.sheets).map fun (i, s) =>
     let maxc := (s.rows.flatMap (·.cells.map (·.ref.col))).foldl max 0
     let maxr := (s.rows.map (·.index)).foldl max 0
@@ -92,7 +92,7 @@ def workbookJson (wb : Workbook) : Json :=
       ("merges", Json.arr (s.merges.toArray.map fun m => Json.mkObj [("ref", m.toA1),
         ("c1", toJson m.first.col), ("r1", toJson m.first.row), ("c2", toJson m.last.col), ("r2", toJson m.last.row)])),
       ("cells", Json.arr (s.rows.flatMap fun r => r.cells.map (cellJson wb.sst)).toArray)]
-  Json.mkObj [("sheets", Json.arr sheets.toArray),
+  Json.mkObj [("sheets", Json.arr sheets.toArray), ("title", title),
     ("sst", Json.arr (wb.sst.map Json.str).toArray), ("check", toJson wb.check)]
 
 /-- The steps `colName` takes on `n`, for the column explorer. -/
@@ -124,12 +124,12 @@ def checkJson (path : String) (l : Read.Loaded) : Json :=
   | j => let _ := v; j
 
 /-- The workbook view of a loaded file, at most `cap` cells per sheet so big files stay drawable. -/
-def workbookJsonCapped (wb : Workbook) (cap : Nat) : Json :=
+def workbookJsonCapped (wb : Workbook) (cap : Nat) (title : String := "example.xlsx") : Json :=
   let trim (s : Sheet) : Sheet :=
     let (rows, _) := s.rows.foldl (fun (acc, n) r =>
       if n ≥ cap then (acc, n) else (acc ++ [{ r with cells := r.cells.take (cap - n) }], n + r.cells.length)) ([], 0)
     { s with rows := rows.filter (!·.cells.isEmpty) }
-  workbookJson { wb with sheets := wb.sheets.map trim }
+  workbookJson { wb with sheets := wb.sheets.map trim } title
 
 
 end Xlsx.Visuals

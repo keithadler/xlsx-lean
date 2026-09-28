@@ -167,6 +167,7 @@ export default function PackageMap(props) {
   const sheets = pkg.parts.filter(p => p.role === 'worksheet').length;
   const ask = k => {
     setN(k);
+    if (!rs) return;
     rs.call('Xlsx.Visuals.layoutRpc', { n: k }).then(setPkg).catch(e => setErr(String(e && e.message || e)));
   };
   const box = { border: '1px solid rgba(127,127,127,0.25)', borderRadius: 10, padding: 12 };
@@ -174,7 +175,7 @@ export default function PackageMap(props) {
     h('div', { style: { display: 'flex', alignItems: 'baseline', gap: 12, flexWrap: 'wrap' } },
       h('div', { style: { fontSize: 15, fontWeight: 700 } }, pkg.title),
       h('div', { style: { fontSize: 12, ...muted } }, `${pkg.parts.length + 1} ZIP entries · ${pkg.rels.reduce((a, g) => a + g.items.length, 0)} relationships`)),
-    h('div', { style: { ...box, display: 'flex', alignItems: 'center', gap: 10, fontSize: 12 } },
+    !pkg.interactive ? null : h('div', { style: { ...box, display: 'flex', alignItems: 'center', gap: 10, fontSize: 12 } },
       h('span', null, 'Sheets'),
       h('input', { type: 'range', min: 1, max: 12, value: n ?? sheets, onChange: e => ask(+e.target.value), style: { flex: '0 1 220px' } }),
       h('b', { style: { minWidth: 18 } }, n ?? sheets),
