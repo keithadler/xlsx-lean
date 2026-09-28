@@ -154,9 +154,11 @@ def reportText (path : String) (l : Loaded) : String := Id.run do
   let mark (b : Bool) := if b then "✓" else "✗"
   let errs := l.notes.filter (·.severity == .error)
   let cells := l.wb.sheets.foldl (fun a s => a + s.rows.foldl (fun b r => b + r.cells.length) 0) 0
-  let mut s := s!"{path}\n  {l.entries} entries, {l.wb.sheets.length} worksheets, {cells} cells, {l.wb.sst.length} shared strings\n"
+  let pl (n : Nat) (w : String) := s!"{n} {w}{if n == 1 then "" else "s"}"
+  let mut s := s!"{path}\n  {l.entries} {if l.entries == 1 then "entry" else "entries"}, {pl l.wb.sheets.length "worksheet"}, {pl cells "cell"}, {pl l.wb.sst.length "shared string"}\n"
   s := s ++ s!"  {mark v.package} package       Package.check        (OPC: names, content types, relationships, one main document)\n"
-  s := s ++ s!"  {mark v.conforms} spreadsheet   conformsCheck        (the main document is a workbook, one typed worksheet per sheet)\n"
+  s := s ++ (if l.pkg.mainDocument.isEmpty then "  - spreadsheet   conformsCheck        (nothing to check: there is no main document)\n"
+    else s!"  {mark v.conforms} spreadsheet   conformsCheck        (the main document is a workbook, one typed worksheet per sheet)\n")
   s := s ++ s!"  {mark v.workbook} workbook      Workbook.check       (sheets, rows, cells, shared strings, styles, Excel's limits)\n"
   s := s ++ s!"  {if v.orphans then "✓" else "!"} writer rule   Package.orphanCheck  (every part reachable; readers ignore orphans)\n"
   unless errs.isEmpty do
