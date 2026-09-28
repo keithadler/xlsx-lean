@@ -68,7 +68,9 @@ def Workbook.workbookXml (wb : Workbook) : String :=
   xmlHeader ++ s!"<workbook xmlns=\"{mainNs}\" xmlns:r=\"{relNs}\">"
   ++ (if wb.date1904 then "<workbookPr date1904=\"1\"/>" else "") ++ "<sheets>"
   ++ String.join ((sheetNums wb.sheets.length).zip wb.sheets |>.map fun (i, s) =>
-      s!"<sheet name=\"{attrEscape s.name}\" sheetId=\"{numeral i}\" r:id=\"{rid i}\"/>")
+      let st := match s.state with
+        | .visible => "" | .hidden => " state=\"hidden\"" | .veryHidden => " state=\"veryHidden\""
+      s!"<sheet name=\"{attrEscape s.name}\" sheetId=\"{numeral i}\"{st} r:id=\"{rid i}\"/>")
   ++ "</sheets></workbook>"
 
 def Cell.xml (c : Cell) : String :=

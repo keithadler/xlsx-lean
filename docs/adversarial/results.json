@@ -1180,6 +1180,46 @@
   }
  },
  {
+  "name": "W21-all-hidden",
+  "kind": "broken",
+  "what": "both sheets hidden",
+  "ours": false,
+  "failed": [
+   "workbook_check"
+  ],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
+  "name": "G26-one-hidden",
+  "kind": "probe",
+  "what": "one sheet very hidden, one visible",
+  "ours": true,
+  "failed": [],
+  "expat": {
+   "status": "ok"
+  },
+  "openpyxl": {
+   "status": "ok"
+  },
+  "calamine": {
+   "status": "ok"
+  },
+  "sheetjs": {
+   "status": "ok"
+  }
+ },
+ {
   "name": "G22-decimals",
   "kind": "probe",
   "what": "decimals 3.25, 1E-3, -6.02E23, and an error value",

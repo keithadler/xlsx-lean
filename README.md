@@ -79,7 +79,7 @@ A rule is only as good as its source, so every rule in the spec says where it co
 
 Cells can hold integers, decimals (kept exactly as written, `m × 10^e`), text (shared or inline), booleans, error values, or nothing but a format, and each can carry a formula. Sheets carry their merged ranges and the used range they claim (`<dimension>`); the workbook carries its number formats and its date system.
 
-**More rules:** the claimed used range holds every cell; merged ranges are valid, never overlap (Excel repairs overlaps), and only a merge's top-left cell holds a value (Excel hides the rest, and openpyxl discards them); every style's number format exists (ids below 164 are built in, the rest must be declared); a number shown as a date is one Excel can show, from serial 0 to 9999-12-31. `Sheet.WellFormed.merge_unique` proves every cell is in at most one merged range.
+**More rules:** the claimed used range holds every cell; merged ranges are valid, never overlap (Excel repairs overlaps), and only a merge's top-left cell holds a value (Excel hides the rest, and openpyxl discards them); at least one sheet is visible (Excel repairs a workbook whose sheets are all hidden; all four readers take one without complaint); every style's number format exists (ids below 164 are built in, the rest must be declared); a number shown as a date is one Excel can show, from serial 0 to 9999-12-31. `Sheet.WellFormed.merge_unique` proves every cell is in at most one merged range.
 
 **Dates** are numbers in a date format, nothing more. `xlsxlean` reads them as Excel shows them, including its two odd days in the 1900 system: serial 0 is 1900-01-00 and serial 60 is 1900-02-29, which Excel inherited from Lotus 1-2-3. The readers disagree about exactly those days (below).
 

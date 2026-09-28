@@ -101,6 +101,8 @@ def workbookProblems (wb : Workbook) (sheetEntries : Array (String × String)) :
   let mut out : Array Problem := #[]
   if wb.sheets.isEmpty then out := out.push ⟨"has_sheet", "workbook", "no worksheets"⟩
   if wb.styleCount == 0 then out := out.push ⟨"has_style", "styles", "cellXfs is empty"⟩
+  if !wb.sheets.isEmpty && !wb.sheets.any (·.state == .visible) then
+    out := out.push ⟨"one_visible", "workbook", "every sheet is hidden"⟩
   let ids := wb.numFmts.map (·.1)
   for (i, id) in (List.range ids.length).zip ids do
     if (ids.take i).contains id then out := out.push ⟨"numfmt_ids_unique", "styles", s!"numFmtId {id} is declared twice"⟩

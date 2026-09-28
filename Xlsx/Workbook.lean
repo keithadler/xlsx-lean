@@ -72,6 +72,12 @@ structure Row where
   cells : List Cell
   deriving DecidableEq, Repr
 
+/-- `<sheet state="hidden"/>`: shown, hidden (the user can unhide it), or very hidden
+(only code can). -/
+inductive SheetState where
+  | visible | hidden | veryHidden
+  deriving DecidableEq, Repr
+
 structure Sheet where
   name : String
   rows : List Row
@@ -79,6 +85,7 @@ structure Sheet where
   dimension : Option Range := none
   /-- `<mergeCell ref="A6:C6"/>`: merged rectangles. -/
   merges : List Range := []
+  state : SheetState := .visible
   deriving DecidableEq, Repr
 
 structure Workbook where
@@ -217,6 +224,9 @@ structure Workbook.WellFormed (wb : Workbook) : Prop where
   has_style : 0 < wb.styleCount
   /-- Every shared string is writable (**XML**, **Excel**). -/
   sst_ok : ∀ t ∈ wb.sst, textOk t = true
+  /-- At least one sheet is visible: Excel repairs a workbook whose sheets are all
+  hidden (**Excel**). -/
+  one_visible : ∃ s ∈ wb.sheets, s.state = .visible
   /-- Custom number format ids are unique (**ECMA-376**). -/
   numfmt_ids_unique : (wb.numFmts.map (·.1)).Nodup
   /-- `numFmtId` is given for every style, or for none (**ECMA-376**). -/
@@ -370,6 +380,7 @@ def Workbook.check (wb : Workbook) : Bool :=
   !wb.sheets.isEmpty && wb.sheets.all (Sheet.check wb)
   && Package.noDups (wb.sheets.map Sheet.key) && 0 < wb.styleCount
   && wb.sst.all textOk
+  && wb.sheets.any (·.state == .visible)
   && Package.noDups (wb.numFmts.map (·.1))
   && (wb.xfFormats.isEmpty || wb.xfFormats.length == wb.styleCount)
   && wb.xfFormats.all (fun id => id < 164 || (wb.numFmts.map (·.1)).contains id)
@@ -438,9 +449,9 @@ theorem Sheet.check_sound {wb s} (h : Sheet.check wb s = true) : s.WellFormed wb
 theorem Workbook.check_sound {wb : Workbook} (h : wb.check = true) : wb.WellFormed := by
   simp only [Workbook.check, Bool.and_eq_true, decide_eq_true_eq, List.all_eq_true,
     Bool.not_eq_true', List.isEmpty_eq_false_iff] at h
-  obtain ⟨⟨⟨⟨⟨⟨⟨h1, h2⟩, h3⟩, h4⟩, h5⟩, h6⟩, h7⟩, h8⟩ := h
+  obtain ⟨⟨⟨⟨⟨⟨⟨⟨h1, h2⟩, h3⟩, h4⟩, h5⟩, hv⟩, h6⟩, h7⟩, h8⟩ := h
   refine ⟨h1, fun s hs => Sheet.check_sound (h2 s hs), Package.noDups_sound h3, h4, h5,
-    Package.noDups_sound h6, ?_, ?_⟩
+    by simpa [List.any_eq_true] using hv, Package.noDups_sound h6, ?_, ?_⟩
   · simp only [Bool.or_eq_true, List.isEmpty_iff, beq_iff_eq] at h7
     exact h7
   · intro id hid

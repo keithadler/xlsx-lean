@@ -41,6 +41,7 @@ W19-date-out-of-range        FAIL   ok        DIFFERS   CRASHES   DIFFERS
                                     calamine: PanicException: called `Result::unwrap()` on an `Err` value: PyErr { type: <class 'ValueError'>, value: ValueE
                                     sheetjs: Probe!A1: read '10113-09-19', model '10113-09-19'
 W20-numfmt-twice             FAIL   ok        ok        ok        ok       
+W21-all-hidden               FAIL   ok        ok        ok        ok       
 
 == gap ==
 case                         ours   expat     openpyxl  calamine  sheetjs  
@@ -82,6 +83,7 @@ G25-dates-1904               pass   ok        DIFFERS   DIFFERS   DIFFERS
                                     openpyxl: Probe!A1: read datetime.time(0, 0), model '1904-01-01'
                                     calamine: Probe!A1: read datetime.time(0, 0), model '1904-01-01'
                                     sheetjs: Probe!A1: read '1899-12-30', model '1904-01-01'
+G26-one-hidden               pass   ok        ok        ok        ok       
 G22-decimals                 pass   ok        ok        DIFFERS   ok       
                                     calamine: Probe!D1: read None, model '#N/A'
 G23-formula-cached           pass   ok        ok        ok        ok       

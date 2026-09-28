@@ -329,7 +329,9 @@ def load (entries : Array ZipEntry) : Loaded := Id.run do
                 if let some root := root then
                   let (sheet, n) := loadSheet sname target.entryName root notes
                   notes := n
-                  sheets := sheets ++ [sheet]
+                  let state : SheetState := match s.attr? "state" with
+                    | some "hidden" => .hidden | some "veryHidden" => .veryHidden | _ => .visible
+                  sheets := sheets ++ [{ sheet with state }]
                   sheetEntries := sheetEntries.push (sname, target.entryName)
   | [] => notes := notes.push ⟨.error, "_rels/.rels", "no officeDocument relationship"⟩
   | _ => notes := notes.push ⟨.error, "_rels/.rels", "more than one officeDocument relationship"⟩

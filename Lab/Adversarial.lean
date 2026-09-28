@@ -164,6 +164,12 @@ def probes : List Case :=
   , c "G25-dates-1904" "probe" "serials 0, 1, 45000 in the 1904 date system"
       { (oneCellRow [⟨⟨1, 1⟩, .number 0, 1, none⟩, ⟨⟨2, 1⟩, .number 1, 1, none⟩, ⟨⟨3, 1⟩, .number 45000, 1, none⟩]) with
           styleCount := 2, xfFormats := [0, 14], date1904 := true }
+  , c "W21-all-hidden" "broken" "both sheets hidden"
+      { base with sheets := base.sheets.map fun s => { s with state := .hidden } }
+  , c "G26-one-hidden" "probe" "one sheet very hidden, one visible"
+      { base with sheets := match base.sheets with
+          | s :: rest => { s with state := .veryHidden } :: rest
+          | [] => [] }
   , c "G22-decimals" "probe" "decimals 3.25, 1E-3, -6.02E23, and an error value"
       (oneCellRow [⟨⟨1, 1⟩, .real 325 (-2), 0, none⟩, ⟨⟨2, 1⟩, .real 1 (-3), 0, none⟩,
         ⟨⟨3, 1⟩, .real (-602) 21, 0, none⟩, ⟨⟨4, 1⟩, .error "#N/A", 0, none⟩])
