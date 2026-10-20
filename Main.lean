@@ -2,6 +2,7 @@ import Xlsx.Zip
 import Xlsx.Visuals.Data
 import Lab.Adversarial
 import Xlsx.Read.Report
+import Xlsx.Preserved
 
 open Lean Xlsx Lab
 
@@ -163,11 +164,40 @@ def check (args : List String) : IO UInt32 := do
   if json then IO.println "]"
   return if bad == 0 then 0 else 1
 
+/-- Did an edit leave the rest of the file alone: `xlsxlean preserved BEFORE AFTER [--allow PREFIX]...`.
+Parts are compared after decompression. Exit 1 if a part outside the allowed prefixes changed, appeared or went. -/
+def preserved (args : List String) : IO UInt32 := do
+  let rec split : List String → List String × List String
+    | "--allow" :: p :: rest => let (f, a) := split rest; (f, p :: a)
+    | x :: rest => let (f, a) := split rest; (x :: f, a)
+    | [] => ([], [])
+  let (files, allowed) := split args
+  let [before, after] := files
+    | IO.eprintln "usage: xlsxlean preserved BEFORE.xlsx AFTER.xlsx [--allow PREFIX]..."; return 2
+  let load (f : String) : IO (Except String Preserved.Parts) := do
+    match Read.readZip (← IO.FS.readBinFile f) with
+    | .error e => return .error s!"{f}: {e}"
+    | .ok es => return .ok (es.toList.map fun e => (e.name, e.data.toList))
+  match ← load before, ← load after with
+  | .error e, _ | _, .error e => IO.println s!"unreadable: {e}"; return 2
+  | .ok b, .ok a =>
+    let allow := fun n => allowed.any fun p => n.startsWith p
+    let changed := b.filter fun p => allow p.1 && !a.contains p
+    let bad := Preserved.damaged allow b a
+    IO.println s!"{before} -> {after}"
+    IO.println s!"  {b.length} parts before, {a.length} after; {changed.length} changed within the allowed set; {bad.length} outside it"
+    for n in bad do IO.println s!"  ✗ {n}"
+    IO.println (if bad.isEmpty then "  verdict: everything outside the allowed parts is byte for byte the same"
+                else "  verdict: the edit touched parts it was not allowed to")
+    return if bad.isEmpty then 0 else 1
+
 def usage : String := "xlsxlean: the XLSX format as a Lean proof, and a checker for real files.
 
   xlsxlean check [--json] FILE.xlsx ...   check files against the spec; exit 1 if any breaks it
                                           (--json --cells also lists every cell value)
   xlsxlean check --html OUT.html FILE     the same, as one page to share: verdict, package, sheets
+  xlsxlean preserved BEFORE AFTER [--allow PREFIX]...
+                                          did an edit leave every other part byte for byte the same
   xlsxlean write [PATH]                   write the example workbook (default out/example.xlsx)
   xlsxlean lab [DIR] [N]                  write the adversarial corpus with N random workbooks
   xlsxlean help                           this
@@ -179,6 +209,7 @@ def main (args : List String) : IO UInt32 :=
   match args with
   | "lab" :: rest => lab rest
   | "check" :: rest => check rest
+  | "preserved" :: rest => preserved rest
   | "write" :: rest => example_ rest
   | ["help"] | ["--help"] | ["-h"] | [] => do IO.print usage; return 0
   | other => do IO.eprintln s!"unknown command {other.headD ""}\n"; IO.eprint usage; return 2

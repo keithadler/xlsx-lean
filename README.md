@@ -104,6 +104,23 @@ Cells can hold integers, decimals (kept exactly as written, `m × 10^e`), text (
 
 **Dates** are numbers in a date format, nothing more. `xlsxlean` reads them as Excel shows them, including its two odd days in the 1900 system: serial 0 is 1900-01-00 and serial 60 is 1900-02-29, which Excel inherited from Lotus 1-2-3. The readers disagree about exactly those days (below).
 
+## Did an edit leave the rest alone
+
+```bash
+./xlsxlean preserved before.xlsx after.xlsx --allow xl/worksheets/ --allow xl/sharedStrings.xml
+```
+
+Compares two files part by part, after decompression, and names every part outside the allowed prefixes that changed,
+appeared or went missing. Exit 1 if there is one. Its meaning is proved in [`Xlsx/Preserved.lean`](Xlsx/Preserved.lean):
+`damaged_empty_kept` (when the answer is empty, every part the edit was not allowed to touch is in the new file with
+exactly the same bytes), `damaged_empty_added` (and the new file adds no part outside the allowed set), and
+`damaged_self` (a file is preserved against itself).
+
+It exists to test editors. [Plain](https://github.com/keithadler/plainwin) edits a cell, `check` judges the result against
+the spec, and `preserved` judges everything else. Run over the 77 workbooks in calamine's test suite with 13 Plain
+operations each, that pair found Plain bugs the editor's own 1,008 checks had missed: rows without numbers duplicated,
+merged ranges and table ranges not following a row insert, shared formulas orphaned, rows pushed past the last row.
+
 ## The adversarial test
 
 `lake exe xlsxlean lab out/lab` writes 382 files with the same writer as the example, and records our verdict and the model's value for every cell. [`tools/differential.py`](tools/differential.py) then reads every file with four readers from independent code bases: a strict XML parser (expat), openpyxl (Python), calamine (Rust) and SheetJS (JavaScript). It compares each against the model, cell by cell. The corpus has three kinds of file:

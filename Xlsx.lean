@@ -13,3 +13,4 @@ import Xlsx.Read.Zip
 import Xlsx.Read.Model
 import Xlsx.Read.Report
 import Xlsx.ZipProof
+import Xlsx.Preserved
